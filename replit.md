@@ -8,6 +8,12 @@ OnBoard HHRR is a comprehensive Human Resources management application designed 
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+- Proyecto preparado completamente para subir a GitHub (Enero 2025)
+- Archivos de documentación y configuración creados para repositorio público
+- Sistema base funcional con autenticación, dashboard y gestión básica de empleados
+
 ## System Architecture
 
 ### Frontend Architecture

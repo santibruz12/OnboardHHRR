@@ -193,7 +193,7 @@ INTERFAZ DE USUARIO:
 ✓ Interfaz responsive para móviles y tablets
 ✓ Tema moderno con Tailwind CSS y shadcn/ui
 
-GESTIÓN DE EMPLEADOS:
+GESTIÓN DE EMPLEADOS:EA
 ✓ Visualización de lista de empleados
 ✓ Búsqueda por nombre y filtros
 ✓ Información detallada de cada empleado

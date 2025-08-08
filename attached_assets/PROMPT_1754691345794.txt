@@ -1,0 +1,236 @@
+🚀 PROMPT DE DESARROLLO - OnBoard HHRR
+CONTEXTO DEL PROYECTO
+Eres un desarrollador senior especializado en Next.js que va a implementar OnBoard HHRR, una aplicación completa de gestión de Recursos Humanos para el contexto venezolano. El proyecto utiliza el stack: Next.js 14 + TypeScript + Prisma + Supabase + shadcn/ui y debe desarrollarse exclusivamente en Replit.
+ARQUITECTURA Y STACK TECNOLÓGICO
+Frontend: Next.js 14 + TypeScript + Tailwind CSS + shadcn/ui
+Backend: Next.js API Routes + Prisma ORM 
+Base de Datos: Supabase (PostgreSQL)
+Autenticación: NextAuth.js + Supabase Auth
+Estado Global: Zustand
+Validación: Zod
+Componentes UI: Radix UI + shadcn/ui
+Notificaciones: React Hot Toast
+Plataforma: Replit (sin Docker)
+ESTRUCTURA DE PROYECTO OBLIGATORIA
+onboard-hhrr-app/
+├── .env.local                 # Variables de entorno
+├── .env.example              # Template de variables
+├── .replit                   # Configuración Replit
+├── replit.nix               # Dependencias sistema
+├── next.config.js           # Configuración Next.js
+├── package.json             # Dependencias
+├── tailwind.config.js       # Configuración Tailwind
+├── tsconfig.json            # Configuración TypeScript
+├── prisma/
+│   ├── schema.prisma        # Esquema de base de datos
+│   └── migrations/          # Migraciones de DB
+├── src/
+│   ├── app/                 # Next.js App Router
+│   │   ├── (auth)/         # Rutas de autenticación
+│   │   ├── (dashboard)/    # Rutas del dashboard
+│   │   ├── api/            # API routes
+│   │   ├── globals.css     # Estilos globales
+│   │   ├── layout.tsx      # Layout principal
+│   │   └── page.tsx        # Página principal
+│   ├── components/         # Componentes reutilizables
+│   │   ├── ui/            # Componentes base (shadcn/ui)
+│   │   ├── forms/         # Formularios específicos
+│   │   ├── layouts/       # Layouts específicos
+│   │   └── common/        # Componentes comunes
+│   ├── features/          # Módulos por funcionalidad
+│   │   ├── auth/          # Autenticación
+│   │   ├── employees/     # Gestión empleados
+│   │   ├── contracts/     # Gestión contratos
+│   │   ├── dashboard/     # Dashboard
+│   │   └── admin/         # Administración
+│   ├── lib/               # Utilidades y configuraciones
+│   ├── hooks/             # Custom React hooks
+│   ├── types/             # Definiciones TypeScript
+│   └── constants/         # Constantes de la aplicación
+└── tests/                 # Testing
+FUNCIONALIDADES CORE A IMPLEMENTAR
+1. Sistema de Autenticación y Roles
+
+Login/logout seguro con NextAuth.js
+Sistema de roles jerárquicos (6 niveles)
+Permisos granulares por módulo y departamento
+Sesiones con rotación automática de tokens
+2FA opcional para roles críticos
+
+2. Gestión de Empleados
+
+CRUD completo de empleados
+Validación de cédulas venezolanas (V/E-12345678)
+Gestión de jerarquías (supervisor-subordinado)
+Estados: Activo, Inactivo, En Período de Prueba
+Auditoría completa de cambios
+
+3. Gestión de Contratos y Movimientos
+
+Tipos de contrato venezuelanos
+Movimientos internos (ascensos, traslados)
+Validación de solapamiento de fechas
+Workflow de aprobaciones
+Renovaciones automáticas
+
+4. Períodos de Prueba
+
+Gestión unificada (nuevos ingresos + movimientos)
+Alertas automáticas 5 días antes del vencimiento
+Sistema de feedback del supervisor
+Estados y transiciones controladas
+
+5. Dashboard Personalizable
+
+Widgets específicos por rol
+Indicadores en tiempo real
+Filtros por departamento/gerencia
+Alertas y notificaciones
+Reportes exportables
+
+6. Sistema de Auditoría
+
+Log completo de cambios
+Trazabilidad de acciones
+IP y User-Agent tracking
+Reportes de auditoría
+
+REGLAS DE DESARROLLO OBLIGATORIAS
+✅ TIPADO ESTRICTO
+
+TypeScript en modo estricto
+Prohibido usar any
+Interfaces definidas para todos los datos
+Validación con Zod en todas las APIs
+
+✅ SEGURIDAD
+
+Verificación de permisos en cada API route
+Sanitización de inputs obligatoria
+Cifrado de datos sensibles (cédulas)
+Rotación automática de tokens de sesión
+
+✅ VALIDACIONES VENEZOLANAS
+typescript// Cédula venezolana: V-12345678 o E-12345678
+const cedulaRegex = /^[VE]-\d{7,8}$/;
+
+// RIF empresarial: J-123456789-0
+const rifRegex = /^[JGC]-\d{8,9}-\d$/;
+✅ MANEJO DE ERRORES
+
+Try-catch en todas las operaciones async
+Logging de errores obligatorio
+Respuestas de error consistentes
+Auditoría de errores críticos
+
+✅ PERFORMANCE
+
+Lazy loading de componentes pesados
+Queries optimizadas con select específicos
+Paginación en listados grandes
+Caching inteligente
+
+✅ TESTING
+
+Tests unitarios para validadores
+Tests de integración para APIs
+Coverage mínimo del 80%
+Mocks para servicios externos
+
+CONVENCIONES DE CÓDIGO
+Commits en español con prefijos:
+bashfeat(auth): implementar autenticación con NextAuth
+fix(employees): corregir validación de cédula venezolana
+refactor(dashboard): optimizar queries de indicadores
+Nomenclatura:
+
+Archivos: kebab-case (employee-form.tsx)
+Componentes: PascalCase (EmployeeForm)
+Variables: camelCase (employeeData)
+Constantes: UPPER_SNAKE_CASE (MAX_EMPLOYEES)
+APIs: RESTful (/api/employees, /api/employees/[id])
+
+Estructura de API Routes:
+typescriptexport async function GET(request: Request) {
+  try {
+    // 1. Verificar autenticación
+    // 2. Verificar permisos
+    // 3. Validar parámetros
+    // 4. Ejecutar operación
+    // 5. Auditar acción
+    // 6. Retornar respuesta
+  } catch (error) {
+    // Manejo de errores estándar
+  }
+}
+VARIABLES DE ENTORNO REQUERIDAS
+bash# Database
+DATABASE_URL="postgresql://user:pass@host:port/db"
+DIRECT_URL="postgresql://user:pass@host:port/db"
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL="your-supabase-url"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+
+# NextAuth
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-secret-key"
+
+# Encryption
+ENCRYPTION_KEY="your-encryption-key-32-chars"
+ESQUEMA DE BASE DE DATOS
+El proyecto utiliza un esquema PostgreSQL normalizado con las siguientes tablas principales:
+
+Empleados: Datos principales del empleado
+Usuarios: Credenciales y autenticación
+Roles/Usuarios_Roles: Sistema de permisos
+Departamentos/Gerencias/Cargos: Estructura organizacional
+Movimientos: Cambios de posición/contrato
+Periodos_Prueba: Gestión de períodos de prueba
+Egresos: Proceso de salida de empleados
+Auditoria: Trazabilidad completa
+Sesiones: Gestión de sesiones activas
+
+FASES DE DESARROLLO
+FASE 1: Fundación (ACTUAL)
+
+Setup de proyecto en Replit
+Configuración de Supabase y Prisma
+Sistema de autenticación base
+Componentes UI fundamentales
+
+FASE 2: Core de Usuarios
+
+Gestión avanzada de roles
+Sistema de permisos granulares
+Auditoría y logging
+
+FASE 3: Módulos de Gestión
+
+Gestión de empleados
+Gestión de contratos
+Períodos de prueba
+Proceso de egresos
+
+FASE 4: Dashboard y Analytics
+
+Dashboard personalizable
+Sistema de alertas
+Reportes y métricas
+
+FASE 5: Optimización
+
+Testing integral
+Performance optimization
+Documentación final
+
+CONTEXTO ADICIONAL IMPORTANTE
+
+Ubicación: Venezuela (validaciones locales de cédula/RIF)
+Marco Legal: Ley Orgánica de Protección de Datos Personales (2021)
+Usuarios objetivo: Equipos de RRHH de empresas medianas/grandes
+Roles principales: Gerente RRHH, Admin RRHH, Supervisores, Empleados Captación
+Funcionalidades críticas: Auditoría, seguridad, workflow de aprobaciones
+
+¡EMPEZAR DESARROLLO INMEDIATAMENTE!

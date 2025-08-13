@@ -156,6 +156,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <h1 className="text-xl font-semibold text-foreground">
             {location === "/dashboard" && "Dashboard Principal"}
             {location === "/employees" && "Gestión de Empleados"}
+            {location === "/contracts" && "Gestión de Contratos"}
           </h1>
         </div>
 
@@ -197,13 +198,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Sidebar */}
         <aside
           className={cn(
-            "bg-sidebar-background border-r border-sidebar-border sidebar-transition fixed lg:relative h-screen z-20",
+            "bg-sidebar-background border-r border-sidebar-border transition-all duration-300 h-screen z-20",
             isMobile ? (
-              cn("mobile-sidebar", isOpen && "open")
+              isOpen ? "fixed inset-y-0 left-0 w-64 translate-x-0" : "fixed inset-y-0 left-0 w-64 -translate-x-full"
             ) : isCollapsed ? (
-              "w-16"
+              "relative w-16"
             ) : (
-              "w-64"
+              "relative w-64"
             )
           )}
         >
@@ -235,9 +236,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                   {section.items.map((item) => (
                     <li key={item.path}>
                       <Link href={item.path}>
-                        <a
+                        <div
                           className={cn(
-                            "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                            "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors cursor-pointer",
                             item.active
                               ? "bg-sidebar-accent text-sidebar-accent-foreground border-r-2 border-sidebar-primary"
                               : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -254,7 +255,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
                               )}
                             </>
                           )}
-                        </a>
+                        </div>
                       </Link>
                     </li>
                   ))}
@@ -273,8 +274,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-6 transition-all duration-300">
-          {children}
+        <main className="flex-1 transition-all duration-300 min-h-screen overflow-x-hidden">
+          <div className="p-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>

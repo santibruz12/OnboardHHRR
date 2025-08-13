@@ -60,19 +60,28 @@ export default function Dashboard() {
       changeColor: "text-amber-600"
     },
     {
-      title: "Nuevos Candidatos",
-      value: stats?.newCandidates || 0,
-      change: "Esta semana",
-      icon: UserPlus,
+      title: "Total Contratos",
+      value: stats?.totalContracts || 0,
+      change: "Gestión laboral",
+      icon: FileText,
+      iconBg: "bg-purple-100",
+      iconColor: "text-purple-600",
+      changeColor: "text-blue-600"
+    },
+    {
+      title: "Contratos Activos",
+      value: stats?.activeContracts || 0,
+      change: "En vigencia",
+      icon: UserCheck,
       iconBg: "bg-green-100",
       iconColor: "text-green-600",
-      changeColor: "text-blue-600"
+      changeColor: "text-green-600"
     },
     {
       title: "Contratos por Vencer",
       value: stats?.expiringContracts || 0,
       change: "Próximos 30 días",
-      icon: FileText,
+      icon: AlertTriangle,
       iconBg: "bg-red-100",
       iconColor: "text-red-600",
       changeColor: "text-red-600"

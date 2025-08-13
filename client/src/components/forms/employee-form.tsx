@@ -13,13 +13,15 @@ import { CascadingSelects } from "./cascading-selects";
 import { employeeFormSchema, type EmployeeFormData } from "@/lib/validators";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import type { EmployeeWithRelations } from "@shared/schema";
 
 interface EmployeeFormProps {
   isOpen: boolean;
   onClose: () => void;
+  employee?: EmployeeWithRelations;
 }
 
-export function EmployeeForm({ isOpen, onClose }: EmployeeFormProps) {
+export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -32,7 +34,21 @@ export function EmployeeForm({ isOpen, onClose }: EmployeeFormProps) {
     reset
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeFormSchema),
-    defaultValues: {
+    defaultValues: employee ? {
+      fullName: employee.fullName,
+      cedula: employee.user.cedula,
+      email: employee.email,
+      phone: employee.phone || "",
+      birthDate: employee.birthDate || "",
+      gerenciaId: employee.cargo.departamento.gerenciaId,
+      departamentoId: employee.cargo.departamentoId,
+      cargoId: employee.cargoId,
+      supervisorId: employee.supervisorId || "",
+      startDate: employee.startDate,
+      role: employee.user.role,
+      contractType: employee.contract?.type || "indefinido",
+      generateProbation: false
+    } : {
       contractType: "indefinido",
       role: "empleado",
       generateProbation: false
@@ -65,8 +81,44 @@ export function EmployeeForm({ isOpen, onClose }: EmployeeFormProps) {
     }
   });
 
+  const updateEmployeeMutation = useMutation({
+    mutationFn: async (data: EmployeeFormData) => {
+      const response = await apiRequest("PATCH", `/api/employees/${employee!.id}`, {
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        birthDate: data.birthDate,
+        cargoId: data.cargoId,
+        supervisorId: data.supervisorId,
+        startDate: data.startDate,
+        status: data.status || "activo"
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Empleado actualizado",
+        description: "Los datos del empleado han sido actualizados exitosamente"
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      reset();
+      onClose();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Error al actualizar el empleado",
+        variant: "destructive"
+      });
+    }
+  });
+
   const onSubmit = (data: EmployeeFormData) => {
-    createEmployeeMutation.mutate(data);
+    if (employee) {
+      updateEmployeeMutation.mutate(data);
+    } else {
+      createEmployeeMutation.mutate(data);
+    }
   };
 
   const handleClose = () => {
@@ -78,7 +130,7 @@ export function EmployeeForm({ isOpen, onClose }: EmployeeFormProps) {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Registrar Nuevo Empleado</DialogTitle>
+          <DialogTitle>{employee ? "Editar Empleado" : "Registrar Nuevo Empleado"}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -94,6 +146,7 @@ export function EmployeeForm({ isOpen, onClose }: EmployeeFormProps) {
                   placeholder="V-12345678"
                   {...register("cedula")}
                   className={errors.cedula ? "border-destructive" : ""}
+                  disabled={!!employee}
                 />
                 {errors.cedula && (
                   <p className="text-sm text-destructive mt-1">{errors.cedula.message}</p>
@@ -259,10 +312,13 @@ export function EmployeeForm({ isOpen, onClose }: EmployeeFormProps) {
             </Button>
             <Button 
               type="submit" 
-              disabled={createEmployeeMutation.isPending}
+              disabled={createEmployeeMutation.isPending || updateEmployeeMutation.isPending}
               className="bg-primary hover:bg-primary/90"
             >
-              {createEmployeeMutation.isPending ? "Registrando..." : "Registrar Empleado"}
+              {createEmployeeMutation.isPending || updateEmployeeMutation.isPending 
+                ? employee ? "Actualizando..." : "Registrando..." 
+                : employee ? "Actualizar Empleado" : "Registrar Empleado"
+              }
             </Button>
           </div>
         </form>

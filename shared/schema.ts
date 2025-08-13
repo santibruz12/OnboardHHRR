@@ -182,4 +182,7 @@ export type DashboardStats = {
   probationEmployees: number;
   newCandidates: number;
   expiringContracts: number;
+  totalContracts: number;
+  activeContracts: number;
+  indefiniteContracts: number;
 };

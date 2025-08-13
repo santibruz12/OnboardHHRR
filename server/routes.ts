@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, insertEmployeeSchema, insertUserSchema } from "@shared/schema";
+import { loginSchema, insertEmployeeSchema, insertUserSchema, insertContractSchema } from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -191,6 +191,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/employees/:id", requireAuth, async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ error: "Empleado no encontrado" });
+      }
+      res.json(employee);
+    } catch (error) {
+      console.error("[GET_EMPLOYEE_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener empleado" });
+    }
+  });
+
+  app.patch("/api/employees/:id", requireAuth, async (req, res) => {
+    try {
+      const validation = insertEmployeeSchema.omit({ userId: true }).partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Datos inválidos", 
+          details: validation.error.errors 
+        });
+      }
+
+      const employee = await storage.updateEmployee(req.params.id, validation.data);
+      if (!employee) {
+        return res.status(404).json({ error: "Empleado no encontrado" });
+      }
+      res.json({ success: true, employee });
+    } catch (error) {
+      console.error("[UPDATE_EMPLOYEE_ERROR]", error);
+      res.status(500).json({ error: "Error al actualizar empleado" });
+    }
+  });
+
+  app.delete("/api/employees/:id", requireAuth, async (req, res) => {
+    try {
+      const deleted = await storage.deleteEmployee(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Empleado no encontrado" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[DELETE_EMPLOYEE_ERROR]", error);
+      res.status(500).json({ error: "Error al eliminar empleado" });
+    }
+  });
+
   // Organizational structure routes
   app.get("/api/gerencias", requireAuth, async (req, res) => {
     try {
@@ -219,6 +266,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[GET_CARGOS_ERROR]", error);
       res.status(500).json({ error: "Error al obtener cargos" });
+    }
+  });
+
+  // Contract routes
+  app.get("/api/contracts", requireAuth, async (req, res) => {
+    try {
+      const contracts = await storage.getContracts();
+      res.json(contracts);
+    } catch (error) {
+      console.error("[GET_CONTRACTS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener contratos" });
+    }
+  });
+
+  app.get("/api/contracts/:id", requireAuth, async (req, res) => {
+    try {
+      const contract = await storage.getContract(req.params.id);
+      if (!contract) {
+        return res.status(404).json({ error: "Contrato no encontrado" });
+      }
+      res.json(contract);
+    } catch (error) {
+      console.error("[GET_CONTRACT_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener contrato" });
+    }
+  });
+
+  app.get("/api/contracts/expiring-soon", requireAuth, async (req, res) => {
+    try {
+      const contracts = await storage.getExpiringContracts();
+      res.json(contracts);
+    } catch (error) {
+      console.error("[GET_EXPIRING_CONTRACTS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener contratos por vencer" });
+    }
+  });
+
+  app.get("/api/employees/:employeeId/contracts", requireAuth, async (req, res) => {
+    try {
+      const contracts = await storage.getContractsByEmployee(req.params.employeeId);
+      res.json(contracts);
+    } catch (error) {
+      console.error("[GET_EMPLOYEE_CONTRACTS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener contratos del empleado" });
+    }
+  });
+
+  app.post("/api/contracts", requireAuth, async (req, res) => {
+    try {
+      const validation = insertContractSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Datos inválidos", 
+          details: validation.error.errors 
+        });
+      }
+
+      const contract = await storage.createContract(validation.data);
+      res.status(201).json({ success: true, contract });
+    } catch (error) {
+      console.error("[CREATE_CONTRACT_ERROR]", error);
+      res.status(500).json({ error: "Error al crear contrato" });
+    }
+  });
+
+  app.put("/api/contracts/:id", requireAuth, async (req, res) => {
+    try {
+      const validation = insertContractSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Datos inválidos", 
+          details: validation.error.errors 
+        });
+      }
+
+      const contract = await storage.updateContract(req.params.id, validation.data);
+      if (!contract) {
+        return res.status(404).json({ error: "Contrato no encontrado" });
+      }
+      res.json({ success: true, contract });
+    } catch (error) {
+      console.error("[UPDATE_CONTRACT_ERROR]", error);
+      res.status(500).json({ error: "Error al actualizar contrato" });
+    }
+  });
+
+  app.delete("/api/contracts/:id", requireAuth, async (req, res) => {
+    try {
+      const success = await storage.deleteContract(req.params.id);
+      if (!success) {
+        return res.status(404).json({ error: "Contrato no encontrado" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error("[DELETE_CONTRACT_ERROR]", error);
+      res.status(500).json({ error: "Error al eliminar contrato" });
+    }
+  });
+
+  app.get("/api/contracts/expiring-soon", requireAuth, async (req, res) => {
+    try {
+      const expiringContracts = await storage.getExpiringContracts();
+      res.json(expiringContracts);
+    } catch (error) {
+      console.error("[GET_EXPIRING_CONTRACTS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener contratos por vencer" });
+    }
+  });
+
+  app.get("/api/contracts/expiring-soon", requireAuth, async (req, res) => {
+    try {
+      const contracts = await storage.getExpiringContracts();
+      res.json(contracts);
+    } catch (error) {
+      console.error("[GET_EXPIRING_CONTRACTS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener contratos por vencer" });
     }
   });
 

@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Employees from "@/pages/employees";
+import Contracts from "@/pages/contracts";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -43,6 +44,12 @@ function Router() {
       <Route path="/employees">
         <ProtectedRoute>
           <Employees />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/contracts">
+        <ProtectedRoute>
+          <Contracts />
         </ProtectedRoute>
       </Route>
 

@@ -10,9 +10,12 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- Proyecto preparado completamente para subir a GitHub (Enero 2025)
-- Archivos de documentación y configuración creados para repositorio público
-- Sistema base funcional con autenticación, dashboard y gestión básica de empleados
+- Implementado CRUD completo de empleados con botones Editar, Ver y Eliminar (Enero 2025)
+- Corregidos problemas de layout del sidebar y elementos anidados
+- Agregado endpoint `/api/contracts/expiring-soon` para contratos por vencer
+- Mejorado componente EmployeeForm para soportar edición y vista de detalles
+- Corregidas rutas de API con validación y manejo de errores apropiados
+- Sistema completamente funcional con gestión de empleados y contratos
 
 ## System Architecture
 

@@ -1,20 +1,49 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, Users } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, Users, Edit2, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmployeeForm } from "@/components/forms/employee-form";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { EmployeeWithRelations } from "@shared/schema";
 
 export default function Employees() {
   const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
+  const [editingEmployee, setEditingEmployee] = useState<EmployeeWithRelations | null>(null);
+  const [viewingEmployee, setViewingEmployee] = useState<EmployeeWithRelations | null>(null);
+  const [deleteEmployeeId, setDeleteEmployeeId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: employees = [], isLoading } = useQuery<EmployeeWithRelations[]>({
     queryKey: ["/api/employees"]
+  });
+
+  const deleteEmployeeMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/employees/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      toast({
+        title: "Empleado eliminado",
+        description: "El empleado ha sido eliminado exitosamente.",
+      });
+      setDeleteEmployeeId(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "No se pudo eliminar el empleado.",
+        variant: "destructive",
+      });
+    }
   });
 
   const filteredEmployees = employees.filter(employee =>
@@ -33,6 +62,24 @@ export default function Employees() {
         return <Badge variant="outline" className="border-amber-500 text-amber-700">Período Prueba</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const handleEditEmployee = (employee: EmployeeWithRelations) => {
+    setEditingEmployee(employee);
+  };
+
+  const handleViewEmployee = (employee: EmployeeWithRelations) => {
+    setViewingEmployee(employee);
+  };
+
+  const handleDeleteEmployee = (employeeId: string) => {
+    setDeleteEmployeeId(employeeId);
+  };
+
+  const confirmDeleteEmployee = () => {
+    if (deleteEmployeeId) {
+      deleteEmployeeMutation.mutate(deleteEmployeeId);
     }
   };
 
@@ -181,8 +228,30 @@ export default function Employees() {
                   </div>
 
                   <div className="flex items-center space-x-2">
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="h-4 w-4" />
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleEditEmployee(employee)}
+                      data-testid={`button-edit-${employee.id}`}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleViewEmployee(employee)}
+                      data-testid={`button-view-${employee.id}`}
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteEmployee(employee.id)}
+                      data-testid={`button-delete-${employee.id}`}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -215,6 +284,116 @@ export default function Employees() {
         isOpen={isEmployeeFormOpen}
         onClose={() => setIsEmployeeFormOpen(false)}
       />
+
+      {/* Edit Employee Dialog */}
+      <EmployeeForm
+        isOpen={!!editingEmployee}
+        onClose={() => setEditingEmployee(null)}
+        employee={editingEmployee || undefined}
+      />
+
+      {/* View Employee Dialog */}
+      <Dialog open={!!viewingEmployee} onOpenChange={() => setViewingEmployee(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detalles del Empleado</DialogTitle>
+          </DialogHeader>
+          {viewingEmployee && (
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-lg">
+                    {viewingEmployee.fullName.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-xl font-semibold">{viewingEmployee.fullName}</h3>
+                  <p className="text-muted-foreground">{viewingEmployee.user.cedula}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Email</label>
+                  <p className="text-sm">{viewingEmployee.email}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Teléfono</label>
+                  <p className="text-sm">{viewingEmployee.phone || "No especificado"}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Cargo</label>
+                  <p className="text-sm">{viewingEmployee.cargo.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Departamento</label>
+                  <p className="text-sm">{viewingEmployee.cargo.departamento.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Gerencia</label>
+                  <p className="text-sm">{viewingEmployee.cargo.departamento.gerencia.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Estado</label>
+                  <div>{getStatusBadge(viewingEmployee.status)}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Rol</label>
+                  <div>{getRoleBadge(viewingEmployee.user.role)}</div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Fecha de Ingreso</label>
+                  <p className="text-sm">{new Date(viewingEmployee.startDate).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              {viewingEmployee.contract && (
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-2">Contrato Activo</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Tipo</label>
+                      <p className="text-sm">{viewingEmployee.contract.type}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">Fecha de Inicio</label>
+                      <p className="text-sm">{new Date(viewingEmployee.contract.startDate).toLocaleDateString()}</p>
+                    </div>
+                    {viewingEmployee.contract.endDate && (
+                      <div>
+                        <label className="text-sm font-medium text-muted-foreground">Fecha de Fin</label>
+                        <p className="text-sm">{new Date(viewingEmployee.contract.endDate).toLocaleDateString()}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteEmployeeId} onOpenChange={() => setDeleteEmployeeId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El empleado será eliminado permanentemente del sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteEmployee}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deleteEmployeeMutation.isPending}
+            >
+              {deleteEmployeeMutation.isPending ? "Eliminando..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

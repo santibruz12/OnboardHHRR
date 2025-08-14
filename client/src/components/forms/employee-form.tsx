@@ -45,12 +45,14 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
       cargoId: employee.cargoId,
       supervisorId: employee.supervisorId || "",
       startDate: employee.startDate,
+      status: employee.status,
       role: employee.user.role,
       contractType: employee.contract?.type || "indefinido",
       generateProbation: false
     } : {
       contractType: "indefinido",
       role: "empleado",
+      status: "activo",
       generateProbation: false
     }
   });

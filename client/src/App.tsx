@@ -10,6 +10,8 @@ import Login from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Employees from "@/pages/employees";
 import Contracts from "@/pages/contracts";
+import { CandidatesPage } from "@/pages/candidates";
+import { ProbationPage } from "@/pages/probation";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -50,6 +52,18 @@ function Router() {
       <Route path="/contracts">
         <ProtectedRoute>
           <Contracts />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/candidates">
+        <ProtectedRoute>
+          <CandidatesPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/probation">
+        <ProtectedRoute>
+          <ProbationPage />
         </ProtectedRoute>
       </Route>
 

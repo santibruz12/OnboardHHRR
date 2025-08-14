@@ -11,9 +11,15 @@ import {
   type InsertCargo,
   type Contract,
   type InsertContract,
+  type Candidate,
+  type CandidateWithRelations,
+  type ProbationPeriod,
+  type ProbationPeriodWithRelations,
   type EmployeeWithRelations,
   type DashboardStats,
-  type LoginData
+  type LoginData,
+  insertCandidateSchema,
+  insertProbationPeriodSchema
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -52,6 +58,22 @@ export interface IStorage {
   deleteContract(id: string): Promise<boolean>;
   getExpiringContracts(): Promise<Contract[]>;
 
+  // Candidates
+  getCandidates(): Promise<CandidateWithRelations[]>;
+  getCandidate(id: string): Promise<CandidateWithRelations | undefined>;
+  createCandidate(candidate: Omit<Candidate, 'id' | 'createdAt' | 'updatedAt'>): Promise<Candidate>;
+  updateCandidate(id: string, candidate: Partial<Candidate>): Promise<Candidate | undefined>;
+  deleteCandidate(id: string): Promise<boolean>;
+
+  // Probation Periods
+  getProbationPeriods(): Promise<ProbationPeriodWithRelations[]>;
+  getProbationPeriod(id: string): Promise<ProbationPeriodWithRelations | undefined>;
+  getProbationPeriodsByEmployee(employeeId: string): Promise<ProbationPeriodWithRelations[]>;
+  createProbationPeriod(probationPeriod: Omit<ProbationPeriod, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProbationPeriod>;
+  updateProbationPeriod(id: string, probationPeriod: Partial<ProbationPeriod>): Promise<ProbationPeriod | undefined>;
+  deleteProbationPeriod(id: string): Promise<boolean>;
+  getExpiringProbationPeriods(): Promise<ProbationPeriodWithRelations[]>;
+
   // Dashboard
   getDashboardStats(): Promise<DashboardStats>;
 }
@@ -63,6 +85,8 @@ export class MemStorage implements IStorage {
   private departamentos: Map<string, Departamento> = new Map();
   private cargos: Map<string, Cargo> = new Map();
   private contracts: Map<string, Contract> = new Map();
+  private candidates: Map<string, Candidate> = new Map();
+  private probationPeriods: Map<string, ProbationPeriod> = new Map();
 
   constructor() {
     this.initializeData();
@@ -138,6 +162,66 @@ export class MemStorage implements IStorage {
       startDate: new Date().toISOString().split('T')[0] as any,
       endDate: futureDate.toISOString().split('T')[0] as any,
       isActive: true
+    });
+
+    // Create some sample candidates
+    await this.createCandidate({
+      cedula: "V-23456789",
+      fullName: "Carlos Rodríguez",
+      email: "carlos.rodriguez@example.com",
+      phone: "+58 414-2345678",
+      birthDate: "1990-05-15",
+      cargoId: cargoAnalista.id,
+      status: "en_evaluacion",
+      submittedBy: adminUser.id,
+      notes: "Candidato con experiencia en análisis de datos"
+    });
+
+    await this.createCandidate({
+      cedula: "V-34567890",
+      fullName: "Ana García",
+      email: "ana.garcia@example.com",
+      phone: "+58 412-3456789",
+      birthDate: "1985-08-22",
+      cargoId: cargoAnalista.id,
+      status: "entrevista",
+      submittedBy: adminUser.id,
+      evaluatedBy: adminUser.id,
+      evaluationDate: new Date().toISOString().split('T')[0],
+      evaluationNotes: "Candidato con excelentes referencias",
+      notes: "Experiencia previa en recursos humanos"
+    });
+
+    // Create sample probation periods
+    const probationStartDate = new Date();
+    probationStartDate.setDate(probationStartDate.getDate() - 60); // Started 60 days ago
+    const probationEndDate = new Date();
+    probationEndDate.setDate(probationEndDate.getDate() + 30); // Ends in 30 days
+
+    await this.createProbationPeriod({
+      employeeId: adminEmployee.id,
+      startDate: probationStartDate.toISOString().split('T')[0] as any,
+      endDate: probationEndDate.toISOString().split('T')[0] as any,
+      status: "activo",
+      evaluationNotes: "Empleado muestra buen desempeño durante el período de prueba",
+      supervisorRecommendation: "Recomiendo la confirmación del empleado",
+      hrNotes: "Cumple con los objetivos establecidos para el período de prueba"
+    });
+
+    // Create another probation period that expires soon
+    const urgentProbationEnd = new Date();
+    urgentProbationEnd.setDate(urgentProbationEnd.getDate() + 15); // Expires in 15 days
+
+    const urgentProbationStart = new Date();
+    urgentProbationStart.setDate(urgentProbationStart.getDate() - 75); // Started 75 days ago
+
+    await this.createProbationPeriod({
+      employeeId: adminEmployee.id,
+      startDate: urgentProbationStart.toISOString().split('T')[0] as any,
+      endDate: urgentProbationEnd.toISOString().split('T')[0] as any,
+      status: "activo",
+      evaluationNotes: "Período de prueba próximo a vencer, requiere evaluación",
+      supervisorRecommendation: "Pendiente de evaluación final"
     });
   }
 
@@ -370,6 +454,237 @@ export class MemStorage implements IStorage {
     return this.contracts.delete(id);
   }
 
+  // Candidates methods
+  async getCandidates(): Promise<CandidateWithRelations[]> {
+    const candidatesArray = Array.from(this.candidates.values());
+    const results: CandidateWithRelations[] = [];
+
+    for (const candidate of candidatesArray) {
+      const cargo = this.cargos.get(candidate.cargoId);
+      if (!cargo) continue;
+
+      const departamento = this.departamentos.get(cargo.departamentoId);
+      if (!departamento) continue;
+
+      const gerencia = this.gerencias.get(departamento.gerenciaId);
+      if (!gerencia) continue;
+
+      const submittedByUser = this.users.get(candidate.submittedBy);
+      if (!submittedByUser) continue;
+
+      const evaluatedByUser = candidate.evaluatedBy ? this.users.get(candidate.evaluatedBy) : undefined;
+
+      results.push({
+        ...candidate,
+        cargo: {
+          ...cargo,
+          departamento: {
+            ...departamento,
+            gerencia
+          }
+        },
+        submittedByUser,
+        evaluatedByUser
+      });
+    }
+
+    return results;
+  }
+
+  async getCandidate(id: string): Promise<CandidateWithRelations | undefined> {
+    const candidate = this.candidates.get(id);
+    if (!candidate) return undefined;
+
+    const cargo = this.cargos.get(candidate.cargoId);
+    if (!cargo) return undefined;
+
+    const departamento = this.departamentos.get(cargo.departamentoId);
+    if (!departamento) return undefined;
+
+    const gerencia = this.gerencias.get(departamento.gerenciaId);
+    if (!gerencia) return undefined;
+
+    const submittedByUser = this.users.get(candidate.submittedBy);
+    if (!submittedByUser) return undefined;
+
+    const evaluatedByUser = candidate.evaluatedBy ? this.users.get(candidate.evaluatedBy) : undefined;
+
+    return {
+      ...candidate,
+      cargo: {
+        ...cargo,
+        departamento: {
+          ...departamento,
+          gerencia
+        }
+      },
+      submittedByUser,
+      evaluatedByUser
+    };
+  }
+
+  async createCandidate(candidateData: Omit<Candidate, 'id' | 'createdAt' | 'updatedAt'>): Promise<Candidate> {
+    const id = randomUUID();
+    const now = new Date().toISOString() as any;
+    const candidate: Candidate = {
+      id,
+      ...candidateData,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.candidates.set(id, candidate);
+    return candidate;
+  }
+
+  async updateCandidate(id: string, updates: Partial<Candidate>): Promise<Candidate | undefined> {
+    const candidate = this.candidates.get(id);
+    if (!candidate) return undefined;
+    
+    const updatedCandidate: Candidate = {
+      ...candidate,
+      ...updates,
+      id: candidate.id,
+      createdAt: candidate.createdAt,
+      updatedAt: new Date().toISOString() as any
+    };
+    this.candidates.set(id, updatedCandidate);
+    return updatedCandidate;
+  }
+
+  async deleteCandidate(id: string): Promise<boolean> {
+    return this.candidates.delete(id);
+  }
+
+  // Probation Periods methods
+  async getProbationPeriods(): Promise<ProbationPeriodWithRelations[]> {
+    const probationPeriodsArray = Array.from(this.probationPeriods.values());
+    const results: ProbationPeriodWithRelations[] = [];
+
+    for (const probationPeriod of probationPeriodsArray) {
+      const employee = this.employees.get(probationPeriod.employeeId);
+      if (!employee) continue;
+
+      const user = this.users.get(employee.userId);
+      if (!user) continue;
+
+      const cargo = this.cargos.get(employee.cargoId);
+      if (!cargo) continue;
+
+      const departamento = this.departamentos.get(cargo.departamentoId);
+      if (!departamento) continue;
+
+      const gerencia = this.gerencias.get(departamento.gerenciaId);
+      if (!gerencia) continue;
+
+      const evaluatedByUser = probationPeriod.evaluatedBy ? this.users.get(probationPeriod.evaluatedBy) : undefined;
+
+      results.push({
+        ...probationPeriod,
+        employee: {
+          ...employee,
+          user,
+          cargo: {
+            ...cargo,
+            departamento: {
+              ...departamento,
+              gerencia
+            }
+          }
+        },
+        evaluatedByUser
+      });
+    }
+
+    return results;
+  }
+
+  async getProbationPeriod(id: string): Promise<ProbationPeriodWithRelations | undefined> {
+    const probationPeriod = this.probationPeriods.get(id);
+    if (!probationPeriod) return undefined;
+
+    const employee = this.employees.get(probationPeriod.employeeId);
+    if (!employee) return undefined;
+
+    const user = this.users.get(employee.userId);
+    if (!user) return undefined;
+
+    const cargo = this.cargos.get(employee.cargoId);
+    if (!cargo) return undefined;
+
+    const departamento = this.departamentos.get(cargo.departamentoId);
+    if (!departamento) return undefined;
+
+    const gerencia = this.gerencias.get(departamento.gerenciaId);
+    if (!gerencia) return undefined;
+
+    const evaluatedByUser = probationPeriod.evaluatedBy ? this.users.get(probationPeriod.evaluatedBy) : undefined;
+
+    return {
+      ...probationPeriod,
+      employee: {
+        ...employee,
+        user,
+        cargo: {
+          ...cargo,
+          departamento: {
+            ...departamento,
+            gerencia
+          }
+        }
+      },
+      evaluatedByUser
+    };
+  }
+
+  async getProbationPeriodsByEmployee(employeeId: string): Promise<ProbationPeriodWithRelations[]> {
+    const allProbationPeriods = await this.getProbationPeriods();
+    return allProbationPeriods.filter(pp => pp.employeeId === employeeId);
+  }
+
+  async createProbationPeriod(probationPeriodData: Omit<ProbationPeriod, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProbationPeriod> {
+    const id = randomUUID();
+    const now = new Date().toISOString() as any;
+    const probationPeriod: ProbationPeriod = {
+      id,
+      ...probationPeriodData,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.probationPeriods.set(id, probationPeriod);
+    return probationPeriod;
+  }
+
+  async updateProbationPeriod(id: string, updates: Partial<ProbationPeriod>): Promise<ProbationPeriod | undefined> {
+    const probationPeriod = this.probationPeriods.get(id);
+    if (!probationPeriod) return undefined;
+    
+    const updatedProbationPeriod: ProbationPeriod = {
+      ...probationPeriod,
+      ...updates,
+      id: probationPeriod.id,
+      createdAt: probationPeriod.createdAt,
+      updatedAt: new Date().toISOString() as any
+    };
+    this.probationPeriods.set(id, updatedProbationPeriod);
+    return updatedProbationPeriod;
+  }
+
+  async deleteProbationPeriod(id: string): Promise<boolean> {
+    return this.probationPeriods.delete(id);
+  }
+
+  async getExpiringProbationPeriods(): Promise<ProbationPeriodWithRelations[]> {
+    const today = new Date();
+    const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+    
+    const allProbationPeriods = await this.getProbationPeriods();
+    return allProbationPeriods.filter(probationPeriod => {
+      if (probationPeriod.status !== "activo") return false;
+      const endDate = new Date(probationPeriod.endDate);
+      return endDate >= today && endDate <= thirtyDaysFromNow;
+    });
+  }
+
   async getExpiringContracts(): Promise<Contract[]> {
     const today = new Date();
     const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
@@ -396,14 +711,28 @@ export class MemStorage implements IStorage {
     // Mock data for demo
     const newCandidates = 15;
 
+    const candidates = await this.getCandidates();
+    const totalCandidates = candidates.length;
+    const candidatesInEvaluation = candidates.filter(c => c.status === "en_evaluacion").length;
+    const approvedCandidates = candidates.filter(c => c.status === "aprobado").length;
+
+    const probationPeriods = await this.getProbationPeriods();
+    const activeProbationPeriods = probationPeriods.filter(pp => pp.status === "activo").length;
+    const expiringProbationPeriods = (await this.getExpiringProbationPeriods()).length;
+
     return {
       totalEmployees,
       probationEmployees,
-      newCandidates,
+      newCandidates: candidatesInEvaluation,
       expiringContracts,
       totalContracts,
       activeContracts,
-      indefiniteContracts
+      indefiniteContracts,
+      totalCandidates,
+      candidatesInEvaluation,
+      approvedCandidates,
+      activeProbationPeriods,
+      expiringProbationPeriods
     };
   }
 }

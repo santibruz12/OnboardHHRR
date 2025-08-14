@@ -83,16 +83,57 @@ export const contracts = pgTable("contracts", {
   createdAt: timestamp("created_at").notNull().defaultNow()
 });
 
+const probationStatusEnum = pgEnum("probation_status", [
+  "activo",
+  "completado", 
+  "extendido",
+  "terminado"
+]);
+
 export const probationPeriods = pgTable("probation_periods", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
-  status: varchar("status", { length: 20 }).notNull().default("active"),
-  feedback: text("feedback"),
+  status: probationStatusEnum("status").notNull().default("activo"),
+  evaluationNotes: text("evaluation_notes"),
+  finalEvaluation: text("final_evaluation"),
+  evaluatedBy: varchar("evaluated_by").references(() => users.id),
+  evaluationDate: date("evaluation_date"),
+  extensionReason: text("extension_reason"),
+  extensionDate: date("extension_date"),
+  originalEndDate: date("original_end_date"),
+  supervisorRecommendation: text("supervisor_recommendation"),
+  hrNotes: text("hr_notes"),
   approved: boolean("approved"),
-  approvedBy: varchar("approved_by").references(() => users.id),
-  createdAt: timestamp("created_at").notNull().defaultNow()
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+export const candidateStatusEnum = pgEnum("candidate_status", [
+  "en_evaluacion",
+  "aprobado", 
+  "rechazado",
+  "contratado"
+]);
+
+export const candidates = pgTable("candidates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cedula: varchar("cedula", { length: 12 }).notNull().unique(),
+  fullName: varchar("full_name", { length: 200 }).notNull(),
+  email: varchar("email", { length: 150 }).notNull(),
+  phone: varchar("phone", { length: 20 }),
+  birthDate: date("birth_date"),
+  cargoId: varchar("cargo_id").notNull().references(() => cargos.id),
+  cvUrl: text("cv_url"),
+  notes: text("notes"),
+  status: candidateStatusEnum("status").notNull().default("en_evaluacion"),
+  submittedBy: varchar("submitted_by").notNull().references(() => users.id),
+  evaluatedBy: varchar("evaluated_by").references(() => users.id),
+  evaluationNotes: text("evaluation_notes"),
+  evaluationDate: timestamp("evaluation_date"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
 export const auditLogs = pgTable("audit_logs", {
@@ -141,6 +182,18 @@ export const insertCargoSchema = createInsertSchema(cargos).omit({
   createdAt: true
 });
 
+export const insertCandidateSchema = createInsertSchema(candidates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertProbationPeriodSchema = createInsertSchema(probationPeriods).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 // Login Schema
 export const loginSchema = z.object({
   cedula: z.string().regex(/^[VE]-\d{7,8}$/, "Formato de cédula inválido (V-12345678 o E-12345678)"),
@@ -154,6 +207,7 @@ export type InsertContract = z.infer<typeof insertContractSchema>;
 export type InsertGerencia = z.infer<typeof insertGerenciaSchema>;
 export type InsertDepartamento = z.infer<typeof insertDepartamentoSchema>;
 export type InsertCargo = z.infer<typeof insertCargoSchema>;
+export type InsertProbationPeriod = z.infer<typeof insertProbationPeriodSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 
 export type User = typeof users.$inferSelect;
@@ -164,6 +218,7 @@ export type Departamento = typeof departamentos.$inferSelect;
 export type Cargo = typeof cargos.$inferSelect;
 export type ProbationPeriod = typeof probationPeriods.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type Candidate = typeof candidates.$inferSelect;
 
 // Extended types for relations
 export type EmployeeWithRelations = Employee & {
@@ -177,6 +232,28 @@ export type EmployeeWithRelations = Employee & {
   contract?: Contract;
 };
 
+export type CandidateWithRelations = Candidate & {
+  cargo: Cargo & {
+    departamento: Departamento & {
+      gerencia: Gerencia;
+    };
+  };
+  submittedByUser: User;
+  evaluatedByUser?: User;
+};
+
+export type ProbationPeriodWithRelations = ProbationPeriod & {
+  employee: Employee & {
+    user: User;
+    cargo: Cargo & {
+      departamento: Departamento & {
+        gerencia: Gerencia;
+      };
+    };
+  };
+  evaluatedByUser?: User;
+};
+
 export type DashboardStats = {
   totalEmployees: number;
   probationEmployees: number;
@@ -185,4 +262,9 @@ export type DashboardStats = {
   totalContracts: number;
   activeContracts: number;
   indefiniteContracts: number;
+  totalCandidates: number;
+  candidatesInEvaluation: number;
+  approvedCandidates: number;
+  activeProbationPeriods: number;
+  expiringProbationPeriods: number;
 };

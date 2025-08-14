@@ -20,6 +20,7 @@ export const employeeFormSchema = z.object({
   cargoId: z.string().min(1, "Seleccionar cargo"),
   supervisorId: z.string().optional(),
   startDate: z.string().min(1, "Fecha de ingreso requerida"),
+  status: z.enum(["activo", "inactivo", "periodo_prueba"]).optional(),
   
   // Contract Information
   contractType: z.enum(["indefinido", "determinado", "obra", "pasantia"]),

@@ -6,6 +6,10 @@ export type {
   Departamento, 
   Cargo,
   Contract,
+  Candidate,
+  CandidateWithRelations,
+  ProbationPeriod,
+  ProbationPeriodWithRelations,
   DashboardStats,
   LoginData 
 } from "@shared/schema";

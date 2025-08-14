@@ -10,12 +10,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-- Implementado CRUD completo de empleados con botones Editar, Ver y Eliminar (Enero 2025)
-- Corregidos problemas de layout del sidebar y elementos anidados
-- Agregado endpoint `/api/contracts/expiring-soon` para contratos por vencer
-- Mejorado componente EmployeeForm para soportar edición y vista de detalles
-- Corregidas rutas de API con validación y manejo de errores apropiados
-- Sistema completamente funcional con gestión de empleados y contratos
+- ✅ Migración completa de Replit Agent a Replit (Enero 2025)
+- ✅ Corregido CRUD de empleados: pre-carga de datos en edición y error 400 al crear
+- ✅ Agregado campo `status` al employeeFormSchema para soporte completo de estados
+- ✅ Mejorado manejo de validaciones frontend/backend para empleados
+- ✅ Creada documentación completa del sistema en DOCUMENTACION_SISTEMA_RODSAL.md
+- ✅ Sistema completamente funcional con gestión de empleados y contratos
+- ✅ Workflow de desarrollo configurado y operativo en Replit
+- ✅ Implementado Módulo de Reclutamiento completo con gestión de candidatos (Enero 2025)
+- ✅ Implementado Módulo de Períodos de Prueba completo con seguimiento y evaluaciones (Enero 2025)
 
 ## System Architecture
 
@@ -53,7 +56,9 @@ Preferred communication style: Simple, everyday language.
 - **Organizational Structure**: Three-tier hierarchy (Gerencias → Departamentos → Cargos)
 - **Contract System**: Multiple contract types (indefinido, determinado, obra, pasantia) with status tracking
 - **User System**: Separate user accounts linked to employee records for authentication
-- **Dashboard Analytics**: Aggregated statistics for HR insights and reporting
+- **Recruitment Module**: Complete candidate lifecycle management with evaluation tracking
+- **Probation Periods**: Comprehensive probation period management with status tracking and evaluations
+- **Dashboard Analytics**: Aggregated statistics for HR insights and reporting across all modules
 
 ## External Dependencies
 

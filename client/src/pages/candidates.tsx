@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, FileText, Mail, Phone, User, Edit, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-// import { CandidateForm } from "@/components/forms/candidate-form";
+import { CandidateForm } from "@/components/forms/candidate-form";
 import type { CandidateWithRelations } from "@/types";
 
 export function CandidatesPage() {
@@ -57,7 +57,6 @@ export function CandidatesPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       "en_evaluacion": { label: "En Evaluación", variant: "secondary" as const },
-      "entrevista": { label: "Entrevista", variant: "default" as const },
       "aprobado": { label: "Aprobado", variant: "default" as const },
       "rechazado": { label: "Rechazado", variant: "destructive" as const },
       "contratado": { label: "Contratado", variant: "default" as const }
@@ -113,7 +112,10 @@ export function CandidatesPage() {
                 {editingCandidate ? "Editar Candidato" : "Nuevo Candidato"}
               </DialogTitle>
             </DialogHeader>
-            <div>Formulario de candidatos en desarrollo...</div>
+            <CandidateForm
+              candidate={editingCandidate || undefined}
+              onSuccess={handleDialogClose}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -144,12 +146,12 @@ export function CandidatesPage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Entrevistas</CardTitle>
+            <CardTitle className="text-sm font-medium">Rechazados</CardTitle>
             <User className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {candidates.filter((c: CandidateWithRelations) => c.status === "entrevista").length}
+              {candidates.filter((c: CandidateWithRelations) => c.status === "rechazado").length}
             </div>
           </CardContent>
         </Card>
@@ -197,7 +199,6 @@ export function CandidatesPage() {
           <SelectContent>
             <SelectItem value="all">Todos los estados</SelectItem>
             <SelectItem value="en_evaluacion">En Evaluación</SelectItem>
-            <SelectItem value="entrevista">Entrevista</SelectItem>
             <SelectItem value="aprobado">Aprobado</SelectItem>
             <SelectItem value="rechazado">Rechazado</SelectItem>
             <SelectItem value="contratado">Contratado</SelectItem>

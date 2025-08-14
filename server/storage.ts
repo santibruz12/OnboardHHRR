@@ -32,6 +32,7 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
+import { neon } from '@neondatabase/serverless';
 
 export interface IStorage {
   // Auth
@@ -109,6 +110,491 @@ export interface IStorage {
 
   // Dashboard
   getDashboardStats(): Promise<DashboardStats>;
+}
+
+export class PostgresStorage implements IStorage {
+  private sql;
+
+  constructor() {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL not found");
+    }
+    this.sql = neon(process.env.DATABASE_URL);
+  }
+
+  async login(credentials: LoginData): Promise<{ user: User; employee?: EmployeeWithRelations } | null> {
+    const userResult = await this.sql`
+      SELECT * FROM users WHERE cedula = ${credentials.cedula} AND is_active = true
+    `;
+    
+    if (userResult.length === 0) return null;
+    
+    const user = userResult[0] as User;
+    const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+    if (!isValidPassword) return null;
+
+    const employee = await this.getEmployeeByUserId(user.id);
+    return { user, employee };
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    const result = await this.sql`SELECT * FROM users WHERE id = ${id}`;
+    return result[0] as User || undefined;
+  }
+
+  async getUserByCedula(cedula: string): Promise<User | undefined> {
+    const result = await this.sql`SELECT * FROM users WHERE cedula = ${cedula}`;
+    return result[0] as User || undefined;
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    const result = await this.sql`
+      INSERT INTO users (cedula, password, role, is_active)
+      VALUES (${user.cedula}, ${user.password}, ${user.role || 'empleado'}, ${user.isActive ?? true})
+      RETURNING *
+    `;
+    return result[0] as User;
+  }
+
+  async updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined> {
+    const setClauses = [];
+    const values = [];
+    
+    if (user.cedula !== undefined) { setClauses.push(`cedula = $${setClauses.length + 1}`); values.push(user.cedula); }
+    if (user.password !== undefined) { setClauses.push(`password = $${setClauses.length + 1}`); values.push(user.password); }
+    if (user.role !== undefined) { setClauses.push(`role = $${setClauses.length + 1}`); values.push(user.role); }
+    if (user.isActive !== undefined) { setClauses.push(`is_active = $${setClauses.length + 1}`); values.push(user.isActive); }
+    
+    if (setClauses.length === 0) return this.getUser(id);
+    
+    setClauses.push(`updated_at = NOW()`);
+    values.push(id);
+    
+    const result = await this.sql`
+      UPDATE users 
+      SET ${this.sql.unsafe(setClauses.join(', '))}
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0] as User || undefined;
+  }
+
+  async getEmployees(): Promise<EmployeeWithRelations[]> {
+    const result = await this.sql`
+      SELECT 
+        e.*,
+        u.cedula, u.role, u.is_active as user_is_active,
+        c.name as cargo_name,
+        d.name as departamento_name,
+        g.name as gerencia_name,
+        g.id as gerencia_id,
+        d.id as departamento_id,
+        c.id as cargo_id,
+        s.full_name as supervisor_name,
+        ct.type as contract_type, ct.start_date as contract_start_date, ct.end_date as contract_end_date
+      FROM employees e
+      JOIN users u ON e.user_id = u.id
+      JOIN cargos c ON e.cargo_id = c.id
+      JOIN departamentos d ON c.departamento_id = d.id
+      JOIN gerencias g ON d.gerencia_id = g.id
+      LEFT JOIN employees s ON e.supervisor_id = s.id
+      LEFT JOIN contracts ct ON e.id = ct.employee_id AND ct.is_active = true
+      ORDER BY e.full_name
+    `;
+
+    return result.map((row: any) => ({
+      id: row.id,
+      userId: row.user_id,
+      fullName: row.full_name,
+      email: row.email,
+      phone: row.phone,
+      birthDate: row.birth_date,
+      cargoId: row.cargo_id,
+      supervisorId: row.supervisor_id,
+      startDate: row.start_date,
+      status: row.status,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      user: {
+        id: row.user_id,
+        cedula: row.cedula,
+        password: '', // No enviar password
+        role: row.role,
+        isActive: row.user_is_active,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      },
+      cargo: {
+        id: row.cargo_id,
+        name: row.cargo_name,
+        departamentoId: row.departamento_id,
+        createdAt: row.created_at,
+        departamento: {
+          id: row.departamento_id,
+          name: row.departamento_name,
+          gerenciaId: row.gerencia_id,
+          createdAt: row.created_at,
+          gerencia: {
+            id: row.gerencia_id,
+            name: row.gerencia_name,
+            description: null,
+            createdAt: row.created_at
+          }
+        }
+      },
+      supervisor: row.supervisor_id ? {
+        id: row.supervisor_id,
+        fullName: row.supervisor_name,
+        userId: '',
+        email: '',
+        phone: null,
+        birthDate: null,
+        cargoId: '',
+        supervisorId: null,
+        startDate: '',
+        status: 'activo',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } : undefined,
+      contract: row.contract_type ? {
+        id: '',
+        employeeId: row.id,
+        type: row.contract_type,
+        startDate: row.contract_start_date,
+        endDate: row.contract_end_date,
+        isActive: true,
+        createdAt: new Date()
+      } : undefined
+    }));
+  }
+
+  async getEmployee(id: string): Promise<EmployeeWithRelations | undefined> {
+    const employees = await this.getEmployees();
+    return employees.find(e => e.id === id);
+  }
+
+  async getEmployeeByUserId(userId: string): Promise<EmployeeWithRelations | undefined> {
+    const employees = await this.getEmployees();
+    return employees.find(e => e.userId === userId);
+  }
+
+  async createEmployee(employee: InsertEmployee): Promise<Employee> {
+    const result = await this.sql`
+      INSERT INTO employees (user_id, full_name, email, phone, birth_date, cargo_id, supervisor_id, start_date, status)
+      VALUES (${employee.userId}, ${employee.fullName}, ${employee.email}, ${employee.phone}, 
+              ${employee.birthDate}, ${employee.cargoId}, ${employee.supervisorId}, 
+              ${employee.startDate}, ${employee.status || 'activo'})
+      RETURNING *
+    `;
+    return result[0] as Employee;
+  }
+
+  async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+    const setClauses = [];
+    const values = [];
+    
+    if (employee.fullName !== undefined) { setClauses.push(`full_name = $${setClauses.length + 1}`); values.push(employee.fullName); }
+    if (employee.email !== undefined) { setClauses.push(`email = $${setClauses.length + 1}`); values.push(employee.email); }
+    if (employee.phone !== undefined) { setClauses.push(`phone = $${setClauses.length + 1}`); values.push(employee.phone); }
+    if (employee.birthDate !== undefined) { setClauses.push(`birth_date = $${setClauses.length + 1}`); values.push(employee.birthDate); }
+    if (employee.cargoId !== undefined) { setClauses.push(`cargo_id = $${setClauses.length + 1}`); values.push(employee.cargoId); }
+    if (employee.supervisorId !== undefined) { setClauses.push(`supervisor_id = $${setClauses.length + 1}`); values.push(employee.supervisorId); }
+    if (employee.startDate !== undefined) { setClauses.push(`start_date = $${setClauses.length + 1}`); values.push(employee.startDate); }
+    if (employee.status !== undefined) { setClauses.push(`status = $${setClauses.length + 1}`); values.push(employee.status); }
+    
+    if (setClauses.length === 0) {
+      const result = await this.sql`SELECT * FROM employees WHERE id = ${id}`;
+      return result[0] as Employee || undefined;
+    }
+    
+    setClauses.push(`updated_at = NOW()`);
+    values.push(id);
+    
+    const result = await this.sql`
+      UPDATE employees 
+      SET ${this.sql.unsafe(setClauses.join(', '))}
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0] as Employee || undefined;
+  }
+
+  async getGerencias(): Promise<Gerencia[]> {
+    const result = await this.sql`SELECT * FROM gerencias ORDER BY name`;
+    return result as Gerencia[];
+  }
+
+  async getDepartamentosByGerencia(gerenciaId: string): Promise<Departamento[]> {
+    const result = await this.sql`SELECT * FROM departamentos WHERE gerencia_id = ${gerenciaId} ORDER BY name`;
+    return result as Departamento[];
+  }
+
+  async getCargosByDepartamento(departamentoId: string): Promise<Cargo[]> {
+    const result = await this.sql`SELECT * FROM cargos WHERE departamento_id = ${departamentoId} ORDER BY name`;
+    return result as Cargo[];
+  }
+
+  async createGerencia(gerencia: InsertGerencia): Promise<Gerencia> {
+    const result = await this.sql`
+      INSERT INTO gerencias (name, description)
+      VALUES (${gerencia.name}, ${gerencia.description})
+      RETURNING *
+    `;
+    return result[0] as Gerencia;
+  }
+
+  async createDepartamento(departamento: InsertDepartamento): Promise<Departamento> {
+    const result = await this.sql`
+      INSERT INTO departamentos (name, gerencia_id)
+      VALUES (${departamento.name}, ${departamento.gerenciaId})
+      RETURNING *
+    `;
+    return result[0] as Departamento;
+  }
+
+  async createCargo(cargo: InsertCargo): Promise<Cargo> {
+    const result = await this.sql`
+      INSERT INTO cargos (name, departamento_id)
+      VALUES (${cargo.name}, ${cargo.departamentoId})
+      RETURNING *
+    `;
+    return result[0] as Cargo;
+  }
+
+  async getContracts(): Promise<Contract[]> {
+    const result = await this.sql`SELECT * FROM contracts ORDER BY created_at DESC`;
+    return result as Contract[];
+  }
+
+  async getContract(id: string): Promise<Contract | undefined> {
+    const result = await this.sql`SELECT * FROM contracts WHERE id = ${id}`;
+    return result[0] as Contract || undefined;
+  }
+
+  async getContractsByEmployee(employeeId: string): Promise<Contract[]> {
+    const result = await this.sql`SELECT * FROM contracts WHERE employee_id = ${employeeId} ORDER BY created_at DESC`;
+    return result as Contract[];
+  }
+
+  async createContract(contract: InsertContract): Promise<Contract> {
+    const result = await this.sql`
+      INSERT INTO contracts (employee_id, type, start_date, end_date, is_active)
+      VALUES (${contract.employeeId}, ${contract.type}, ${contract.startDate}, 
+              ${contract.endDate}, ${contract.isActive ?? true})
+      RETURNING *
+    `;
+    return result[0] as Contract;
+  }
+
+  async updateContract(id: string, contract: Partial<InsertContract>): Promise<Contract | undefined> {
+    const setClauses = [];
+    const values = [];
+    
+    if (contract.type !== undefined) { setClauses.push(`type = $${setClauses.length + 1}`); values.push(contract.type); }
+    if (contract.startDate !== undefined) { setClauses.push(`start_date = $${setClauses.length + 1}`); values.push(contract.startDate); }
+    if (contract.endDate !== undefined) { setClauses.push(`end_date = $${setClauses.length + 1}`); values.push(contract.endDate); }
+    if (contract.isActive !== undefined) { setClauses.push(`is_active = $${setClauses.length + 1}`); values.push(contract.isActive); }
+    
+    if (setClauses.length === 0) return this.getContract(id);
+    
+    values.push(id);
+    
+    const result = await this.sql`
+      UPDATE contracts 
+      SET ${this.sql.unsafe(setClauses.join(', '))}
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0] as Contract || undefined;
+  }
+
+  async deleteContract(id: string): Promise<boolean> {
+    const result = await this.sql`DELETE FROM contracts WHERE id = ${id}`;
+    return result.count > 0;
+  }
+
+  async getExpiringContracts(): Promise<Contract[]> {
+    const result = await this.sql`
+      SELECT * FROM contracts 
+      WHERE end_date IS NOT NULL 
+      AND end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'
+      AND is_active = true
+      ORDER BY end_date
+    `;
+    return result as Contract[];
+  }
+
+  async getCandidates(): Promise<CandidateWithRelations[]> {
+    const result = await this.sql`
+      SELECT 
+        c.*,
+        u.cedula as submitted_by_cedula, u.role as submitted_by_role,
+        ev.cedula as evaluated_by_cedula, ev.role as evaluated_by_role,
+        ca.name as cargo_name,
+        d.name as departamento_name, d.id as departamento_id,
+        g.name as gerencia_name, g.id as gerencia_id
+      FROM candidates c
+      JOIN users u ON c.submitted_by = u.id
+      LEFT JOIN users ev ON c.evaluated_by = ev.id
+      JOIN cargos ca ON c.cargo_id = ca.id
+      JOIN departamentos d ON ca.departamento_id = d.id
+      JOIN gerencias g ON d.gerencia_id = g.id
+      ORDER BY c.created_at DESC
+    `;
+
+    return result.map((row: any) => ({
+      id: row.id,
+      cedula: row.cedula,
+      fullName: row.full_name,
+      email: row.email,
+      phone: row.phone,
+      birthDate: row.birth_date,
+      cargoId: row.cargo_id,
+      cvUrl: row.cv_url,
+      notes: row.notes,
+      status: row.status,
+      submittedBy: row.submitted_by,
+      evaluatedBy: row.evaluated_by,
+      evaluationNotes: row.evaluation_notes,
+      evaluationDate: row.evaluation_date,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      cargo: {
+        id: row.cargo_id,
+        name: row.cargo_name,
+        departamentoId: row.departamento_id,
+        createdAt: row.created_at,
+        departamento: {
+          id: row.departamento_id,
+          name: row.departamento_name,
+          gerenciaId: row.gerencia_id,
+          createdAt: row.created_at,
+          gerencia: {
+            id: row.gerencia_id,
+            name: row.gerencia_name,
+            description: null,
+            createdAt: row.created_at
+          }
+        }
+      },
+      submittedByUser: {
+        id: row.submitted_by,
+        cedula: row.submitted_by_cedula,
+        password: '',
+        role: row.submitted_by_role,
+        isActive: true,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      },
+      evaluatedByUser: row.evaluated_by ? {
+        id: row.evaluated_by,
+        cedula: row.evaluated_by_cedula,
+        password: '',
+        role: row.evaluated_by_role,
+        isActive: true,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      } : undefined
+    }));
+  }
+
+  async getCandidate(id: string): Promise<CandidateWithRelations | undefined> {
+    const candidates = await this.getCandidates();
+    return candidates.find(c => c.id === id);
+  }
+
+  async createCandidate(candidate: Omit<Candidate, 'id' | 'createdAt' | 'updatedAt'>): Promise<Candidate> {
+    const result = await this.sql`
+      INSERT INTO candidates (cedula, full_name, email, phone, birth_date, cargo_id, cv_url, notes, status, submitted_by, evaluated_by, evaluation_notes, evaluation_date)
+      VALUES (${candidate.cedula}, ${candidate.fullName}, ${candidate.email}, ${candidate.phone}, 
+              ${candidate.birthDate}, ${candidate.cargoId}, ${candidate.cvUrl}, ${candidate.notes}, 
+              ${candidate.status}, ${candidate.submittedBy}, ${candidate.evaluatedBy}, 
+              ${candidate.evaluationNotes}, ${candidate.evaluationDate})
+      RETURNING *
+    `;
+    return result[0] as Candidate;
+  }
+
+  async updateCandidate(id: string, candidate: Partial<Candidate>): Promise<Candidate | undefined> {
+    const setClauses = [];
+    const values = [];
+    
+    if (candidate.fullName !== undefined) { setClauses.push(`full_name = $${setClauses.length + 1}`); values.push(candidate.fullName); }
+    if (candidate.email !== undefined) { setClauses.push(`email = $${setClauses.length + 1}`); values.push(candidate.email); }
+    if (candidate.phone !== undefined) { setClauses.push(`phone = $${setClauses.length + 1}`); values.push(candidate.phone); }
+    if (candidate.status !== undefined) { setClauses.push(`status = $${setClauses.length + 1}`); values.push(candidate.status); }
+    if (candidate.evaluationNotes !== undefined) { setClauses.push(`evaluation_notes = $${setClauses.length + 1}`); values.push(candidate.evaluationNotes); }
+    
+    if (setClauses.length === 0) {
+      const result = await this.sql`SELECT * FROM candidates WHERE id = ${id}`;
+      return result[0] as Candidate || undefined;
+    }
+    
+    setClauses.push(`updated_at = NOW()`);
+    values.push(id);
+    
+    const result = await this.sql`
+      UPDATE candidates 
+      SET ${this.sql.unsafe(setClauses.join(', '))}
+      WHERE id = ${id}
+      RETURNING *
+    `;
+    return result[0] as Candidate || undefined;
+  }
+
+  async deleteCandidate(id: string): Promise<boolean> {
+    const result = await this.sql`DELETE FROM candidates WHERE id = ${id}`;
+    return result.count > 0;
+  }
+
+  async getDashboardStats(): Promise<DashboardStats> {
+    const [employeeStats, contractStats, candidateStats, probationStats] = await Promise.all([
+      this.sql`SELECT COUNT(*) as total, status FROM employees GROUP BY status`,
+      this.sql`SELECT COUNT(*) as expiring FROM contracts WHERE end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days' AND is_active = true`,
+      this.sql`SELECT COUNT(*) as total FROM candidates`,
+      this.sql`SELECT COUNT(*) as active FROM probation_periods WHERE status = 'activo'`
+    ]);
+
+    const totalEmployees = employeeStats.reduce((sum: number, stat: any) => sum + parseInt(stat.total), 0);
+    const probationEmployees = employeeStats.find((stat: any) => stat.status === 'periodo_prueba')?.total || 0;
+    const expiringContracts = contractStats[0]?.expiring || 0;
+    const totalCandidates = candidateStats[0]?.total || 0;
+    const activeProbationPeriods = probationStats[0]?.active || 0;
+
+    return {
+      totalEmployees,
+      probationEmployees: parseInt(probationEmployees),
+      expiringContracts: parseInt(expiringContracts),
+      totalCandidates: parseInt(totalCandidates),
+      activeProbationPeriods: parseInt(activeProbationPeriods)
+    };
+  }
+
+  // Métodos stub para completar la interfaz (implementar según sea necesario)
+  async getProbationPeriods(): Promise<ProbationPeriodWithRelations[]> { return []; }
+  async getProbationPeriod(id: string): Promise<ProbationPeriodWithRelations | undefined> { return undefined; }
+  async getProbationPeriodsByEmployee(employeeId: string): Promise<ProbationPeriodWithRelations[]> { return []; }
+  async createProbationPeriod(period: Omit<ProbationPeriod, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProbationPeriod> { throw new Error("Not implemented"); }
+  async updateProbationPeriod(id: string, period: Partial<ProbationPeriod>): Promise<ProbationPeriod | undefined> { return undefined; }
+  async deleteProbationPeriod(id: string): Promise<boolean> { return false; }
+  async getEgresos(): Promise<EgresoWithRelations[]> { return []; }
+  async getEgreso(id: string): Promise<EgresoWithRelations | undefined> { return undefined; }
+  async getEgresosByEmployee(employeeId: string): Promise<EgresoWithRelations[]> { return []; }
+  async createEgreso(egreso: Omit<Egreso, 'id' | 'createdAt' | 'updatedAt'>): Promise<Egreso> { throw new Error("Not implemented"); }
+  async updateEgreso(id: string, egreso: Partial<Egreso>): Promise<Egreso | undefined> { return undefined; }
+  async deleteEgreso(id: string): Promise<boolean> { return false; }
+  async getJobOffers(): Promise<JobOfferWithRelations[]> { return []; }
+  async getJobOffer(id: string): Promise<JobOfferWithRelations | undefined> { return undefined; }
+  async createJobOffer(jobOffer: Omit<JobOffer, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobOffer> { throw new Error("Not implemented"); }
+  async updateJobOffer(id: string, jobOffer: Partial<JobOffer>): Promise<JobOffer | undefined> { return undefined; }
+  async deleteJobOffer(id: string): Promise<boolean> { return false; }
+  async getJobApplications(): Promise<JobApplicationWithRelations[]> { return []; }
+  async getJobApplication(id: string): Promise<JobApplicationWithRelations | undefined> { return undefined; }
+  async getJobApplicationsByOffer(jobOfferId: string): Promise<JobApplicationWithRelations[]> { return []; }
+  async getJobApplicationsByCandidate(candidateId: string): Promise<JobApplicationWithRelations[]> { return []; }
+  async createJobApplication(application: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobApplication> { throw new Error("Not implemented"); }
+  async updateJobApplication(id: string, application: Partial<JobApplication>): Promise<JobApplication | undefined> { return undefined; }
+  async deleteJobApplication(id: string): Promise<boolean> { return false; }
 }
 
 export class MemStorage implements IStorage {
@@ -1041,4 +1527,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = process.env.DATABASE_URL ? new PostgresStorage() : new MemStorage();

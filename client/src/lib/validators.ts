@@ -33,3 +33,27 @@ export const employeeFormSchema = z.object({
 });
 
 export type EmployeeFormData = z.infer<typeof employeeFormSchema>;
+
+export const candidateFormSchema = z.object({
+  // Personal Information
+  cedula: z.string().regex(cedulaRegex, "Formato de cédula inválido (V-12345678 o E-12345678)"),
+  fullName: z.string().min(2, "Nombre debe tener al menos 2 caracteres"),
+  email: z.string().email("Email inválido"),
+  phone: z.string().min(1, "Teléfono es requerido"),
+  birthDate: z.string().optional(),
+  
+  // Position Information
+  gerenciaId: z.string().min(1, "Seleccionar gerencia"),
+  departamentoId: z.string().min(1, "Seleccionar departamento"),
+  cargoId: z.string().min(1, "Seleccionar cargo"),
+  
+  // CV and Additional Information
+  cvUrl: z.string().optional(),
+  notes: z.string().optional(),
+  
+  // Evaluation Information (for editing)
+  status: z.enum(["en_evaluacion", "aprobado", "rechazado", "contratado"]).optional(),
+  evaluationNotes: z.string().optional(),
+});
+
+export type CandidateFormData = z.infer<typeof candidateFormSchema>;

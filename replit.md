@@ -6,7 +6,7 @@ OnBoard HHRR is a comprehensive Human Resources management application designed 
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+Preferred communication style: Simple, everyday language. Always in Spanish
 
 ## PENDIENTES DE IMPLEMENTAR PRIORITARIOS
 

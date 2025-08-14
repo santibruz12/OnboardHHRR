@@ -3,43 +3,26 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { candidateFormSchema, type CandidateFormData } from "@/lib/validators";
 import { apiRequest } from "@/lib/queryClient";
-import { insertCandidateSchema } from "@shared/schema";
-import { z } from "zod";
+import { CascadingSelects } from "./cascading-selects";
 import type { CandidateWithRelations } from "@/types";
-// import { CascadingSelects } from "./cascading-selects";
-
-const candidateFormSchema = z.object({
-  cedula: z.string()
-    .min(1, "La cédula es requerida")
-    .regex(/^[VEve]-\d{7,8}$/, "Formato de cédula inválido (V-12345678 o E-12345678)"),
-  fullName: z.string().min(1, "El nombre completo es requerido"),
-  email: z.string().email("Email inválido"),
-  phone: z.string().min(1, "El teléfono es requerido"),
-  birthDate: z.string().min(1, "La fecha de nacimiento es requerida"),
-  cargoId: z.string().min(1, "El cargo es requerido"),
-  cvUrl: z.string().optional(),
-  notes: z.string().optional(),
-  status: z.enum(["en_evaluacion", "entrevista", "aprobado", "rechazado", "contratado"]).default("en_evaluacion"),
-  evaluatedBy: z.string().optional(),
-  evaluationNotes: z.string().optional(),
-  evaluationDate: z.string().optional(),
-});
-
-type CandidateFormData = z.infer<typeof candidateFormSchema>;
 
 interface CandidateFormProps {
-  candidate?: CandidateWithRelations | null;
-  onSuccess?: () => void;
+  candidate?: CandidateWithRelations;
+  onSuccess: () => void;
 }
 
 export function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isEditing = !!candidate;
 
   const form = useForm<CandidateFormData>({
     resolver: zodResolver(candidateFormSchema),
@@ -49,28 +32,40 @@ export function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
       email: candidate?.email || "",
       phone: candidate?.phone || "",
       birthDate: candidate?.birthDate || "",
+      gerenciaId: candidate?.cargo?.departamento?.gerencia?.id || "",
+      departamentoId: candidate?.cargo?.departamento?.id || "",
       cargoId: candidate?.cargoId || "",
       cvUrl: candidate?.cvUrl || "",
       notes: candidate?.notes || "",
       status: candidate?.status || "en_evaluacion",
-      evaluatedBy: candidate?.evaluatedBy || "",
       evaluationNotes: candidate?.evaluationNotes || "",
-      evaluationDate: candidate?.evaluationDate || "",
     },
   });
 
+
+
   const createCandidateMutation = useMutation({
-    mutationFn: (data: CandidateFormData) => apiRequest("/api/candidates", "POST", data),
+    mutationFn: (data: CandidateFormData) =>
+      apiRequest("/api/candidates", "POST", {
+        cedula: data.cedula,
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        birthDate: data.birthDate || null,
+        cargoId: data.cargoId,
+        cvUrl: data.cvUrl || null,
+        notes: data.notes || null,
+        status: "en_evaluacion",
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       toast({
         title: "Candidato creado",
-        description: "El candidato ha sido creado exitosamente.",
+        description: "El candidato ha sido registrado exitosamente.",
       });
-      onSuccess?.();
+      onSuccess();
     },
     onError: (error: any) => {
-      console.error("Error creating candidate:", error);
       toast({
         title: "Error",
         description: error.message || "No se pudo crear el candidato.",
@@ -80,17 +75,28 @@ export function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
   });
 
   const updateCandidateMutation = useMutation({
-    mutationFn: (data: CandidateFormData) => apiRequest(`/api/candidates/${candidate?.id}`, "PATCH", data),
+    mutationFn: (data: CandidateFormData) =>
+      apiRequest(`/api/candidates/${candidate!.id}`, "PUT", {
+        cedula: data.cedula,
+        fullName: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        birthDate: data.birthDate || null,
+        cargoId: data.cargoId,
+        cvUrl: data.cvUrl || null,
+        notes: data.notes || null,
+        status: data.status,
+        evaluationNotes: data.evaluationNotes || null,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       toast({
         title: "Candidato actualizado",
-        description: "El candidato ha sido actualizado exitosamente.",
+        description: "Los datos del candidato han sido actualizados exitosamente.",
       });
-      onSuccess?.();
+      onSuccess();
     },
     onError: (error: any) => {
-      console.error("Error updating candidate:", error);
       toast({
         title: "Error",
         description: error.message || "No se pudo actualizar el candidato.",
@@ -100,7 +106,7 @@ export function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
   });
 
   const onSubmit = (data: CandidateFormData) => {
-    if (candidate) {
+    if (isEditing) {
       updateCandidateMutation.mutate(data);
     } else {
       createCandidateMutation.mutate(data);
@@ -112,206 +118,251 @@ export function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid gap-6 md:grid-cols-2">
           {/* Información Personal */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Información Personal</h3>
-            
-            <FormField
-              control={form.control}
-              name="cedula"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cédula *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="V-12345678" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Formato: V-12345678 o E-12345678
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="fullName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nombre Completo *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Juan Pérez" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email *</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="juan@ejemplo.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="phone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Teléfono *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="+58 412-1234567" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="birthDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fecha de Nacimiento *</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* Información de Candidatura */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-medium">Información de Candidatura</h3>
-            
-            <FormField
-              control={form.control}
-              name="cargoId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Cargo *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ID del cargo" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Por ahora ingrese el ID del cargo. Se mejorará en la siguiente iteración.
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estado</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+          <Card>
+            <CardHeader>
+              <CardTitle>Información Personal</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="cedula"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cédula</FormLabel>
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecciona el estado" />
-                      </SelectTrigger>
+                      <Input
+                        placeholder="V-12345678 o E-12345678"
+                        {...field}
+                        data-testid="input-cedula"
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="en_evaluacion">En Evaluación</SelectItem>
-                      <SelectItem value="entrevista">Entrevista</SelectItem>
-                      <SelectItem value="aprobado">Aprobado</SelectItem>
-                      <SelectItem value="rechazado">Rechazado</SelectItem>
-                      <SelectItem value="contratado">Contratado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="cvUrl"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL del CV</FormLabel>
-                  <FormControl>
-                    <Input placeholder="https://ejemplo.com/cv.pdf" {...field} />
-                  </FormControl>
-                  <FormDescription>
-                    Enlace al currículum vitae del candidato
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="fullName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre Completo</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Nombre completo del candidato"
+                        {...field}
+                        data-testid="input-fullname"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notas</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Notas adicionales sobre el candidato..."
-                      className="min-h-[100px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Correo Electrónico</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="correo@empresa.com"
+                        {...field}
+                        data-testid="input-email"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="evaluationNotes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notas de Evaluación</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Notas de la evaluación del candidato..."
-                      className="min-h-[100px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Teléfono</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="0424-1234567"
+                        {...field}
+                        data-testid="input-phone"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            <FormField
-              control={form.control}
-              name="evaluationDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Fecha de Evaluación</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+              <FormField
+                control={form.control}
+                name="birthDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fecha de Nacimiento</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                        data-testid="input-birthdate"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Información del Cargo */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Cargo Aplicado</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CascadingSelects
+                values={{
+                  gerenciaId: form.watch("gerenciaId"),
+                  departamentoId: form.watch("departamentoId"),
+                  cargoId: form.watch("cargoId"),
+                }}
+                errors={{
+                  gerenciaId: form.formState.errors.gerenciaId?.message,
+                  departamentoId: form.formState.errors.departamentoId?.message,
+                  cargoId: form.formState.errors.cargoId?.message,
+                }}
+                onGerenciaChange={(value) => {
+                  form.setValue("gerenciaId", value);
+                  form.setValue("departamentoId", "");
+                  form.setValue("cargoId", "");
+                }}
+                onDepartamentoChange={(value) => {
+                  form.setValue("departamentoId", value);
+                  form.setValue("cargoId", "");
+                }}
+                onCargoChange={(value) => form.setValue("cargoId", value)}
+              />
+
+              <FormField
+                control={form.control}
+                name="cvUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>URL del CV (Opcional)</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="https://drive.google.com/..."
+                        {...field}
+                        data-testid="input-cv-url"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Observaciones</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Observaciones sobre el candidato..."
+                        className="min-h-[100px]"
+                        {...field}
+                        data-testid="textarea-notes"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
         </div>
 
-        <div className="flex justify-end gap-3">
+        {/* Sección de Evaluación (solo para edición) */}
+        {isEditing && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Evaluación del Candidato</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado del Candidato</FormLabel>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <FormControl>
+                        <SelectTrigger data-testid="select-status">
+                          <SelectValue placeholder="Seleccionar estado" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="en_evaluacion">En Evaluación</SelectItem>
+                        <SelectItem value="aprobado">Aprobado</SelectItem>
+                        <SelectItem value="rechazado">Rechazado</SelectItem>
+                        <SelectItem value="contratado">Contratado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="evaluationNotes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notas de Evaluación</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Notas sobre la evaluación del candidato..."
+                        className="min-h-[120px]"
+                        {...field}
+                        data-testid="textarea-evaluation-notes"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Botones de Acción */}
+        <div className="flex justify-end gap-4 pt-4 border-t">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onSuccess}
+            disabled={isPending}
+            data-testid="button-cancel"
+          >
+            Cancelar
+          </Button>
           <Button
             type="submit"
             disabled={isPending}
+            data-testid="button-submit"
           >
-            {isPending ? "Guardando..." : candidate ? "Actualizar" : "Crear"} Candidato
+            {isPending
+              ? isEditing
+                ? "Actualizando..."
+                : "Creando..."
+              : isEditing
+              ? "Actualizar Candidato"
+              : "Crear Candidato"}
           </Button>
         </div>
       </form>

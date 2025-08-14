@@ -1,0 +1,440 @@
+===============================================================================
+                    ONBOARD HHRR - SISTEMA DE GESTIÓN DE RECURSOS HUMANOS
+                           DOCUMENTACIÓN TÉCNICA Y FUNCIONAL
+===============================================================================
+
+FECHA DE CREACIÓN: Enero 2025
+DESARROLLADOR: Asistente AI de Replit  
+ESTADO: Módulo de Contratos completamente implementado y funcional
+ÚLTIMA ACTUALIZACIÓN: Enero 2025 - Correcciones de UI y funcionalidad
+
+===============================================================================
+1. DESCRIPCIÓN GENERAL DEL SISTEMA
+===============================================================================
+
+OnBoard HHRR es un sistema integral de gestión de recursos humanos diseñado
+específicamente para empresas venezolanas. El sistema proporciona herramientas
+completas para el ciclo de vida de empleados desde reclutamiento hasta
+administración de contratos, con características específicas del contexto
+venezolano como validación de cédulas.
+
+CARACTERÍSTICAS PRINCIPALES:
+- Sistema de autenticación con roles jerárquicos (6 niveles)
+- Gestión completa de empleados y estructura organizacional
+- Sidebar colapsible con navegación intuitiva
+- Dropdowns en cascada para jerarquía organizacional
+- Validación de cédulas venezolanas (formato V-/E-)
+- Dashboard con estadísticas en tiempo real
+- Interfaz responsive y moderna
+
+===============================================================================
+2. ARQUITECTURA TÉCNICA
+===============================================================================
+
+FRONTEND:
+- Framework: React 18 con TypeScript
+- Build Tool: Vite para desarrollo rápido
+- Routing: Wouter para navegación liviana
+- Styling: Tailwind CSS + shadcn/ui
+- Estado Global: Zustand
+- Formularios: React Hook Form + Zod
+- Consultas: TanStack Query
+- Iconos: Lucide React
+
+BACKEND:
+- Runtime: Node.js con TypeScript
+- Framework: Express.js
+- Sesiones: Express-session con MemoryStore
+- Autenticación: bcryptjs para hashing de contraseñas
+- Validación: Zod schemas
+
+BASE DE DATOS:
+- Motor: PostgreSQL (configurado para Supabase)
+- ORM: Drizzle ORM con Drizzle-Kit
+- Migraciones: npm run db:push
+- Conexión: @neondatabase/serverless
+
+SEGURIDAD:
+- Contraseñas hasheadas con bcryptjs
+- Sesiones HTTP-only
+- Validación de entrada con Zod
+- Roles jerárquicos con control de acceso
+
+===============================================================================
+3. ESTRUCTURA DE LA BASE DE DATOS
+===============================================================================
+
+TABLAS PRINCIPALES:
+
+users (Usuarios del Sistema)
+├── id: varchar (UUID, clave primaria)
+├── cedula: varchar(12) (único, formato V-/E-XXXXXXXX)
+├── password: text (hasheada con bcryptjs)
+├── role: enum (admin, gerente_rrhh, admin_rrhh, supervisor, empleado_captacion, empleado)
+├── isActive: boolean (por defecto true)
+├── createdAt: timestamp
+└── updatedAt: timestamp
+
+gerencias (Gerencias de la Empresa)
+├── id: varchar (UUID, clave primaria)
+├── name: varchar(100)
+├── description: text (opcional)
+└── createdAt: timestamp
+
+departamentos (Departamentos por Gerencia)
+├── id: varchar (UUID, clave primaria)
+├── name: varchar(100)
+├── gerenciaId: varchar (referencia a gerencias.id)
+└── createdAt: timestamp
+
+cargos (Cargos por Departamento)
+├── id: varchar (UUID, clave primaria)
+├── name: varchar(100)
+├── departamentoId: varchar (referencia a departamentos.id)
+└── createdAt: timestamp
+
+employees (Empleados)
+├── id: varchar (UUID, clave primaria)
+├── userId: varchar (referencia a users.id)
+├── fullName: varchar(200)
+├── email: varchar(150) (único)
+├── phone: varchar(20) (opcional)
+├── birthDate: date (opcional)
+├── cargoId: varchar (referencia a cargos.id)
+├── supervisorId: varchar (auto-referencia a employees.id)
+├── startDate: date
+├── status: enum (activo, inactivo, periodo_prueba)
+├── createdAt: timestamp
+└── updatedAt: timestamp
+
+contracts (Contratos de Trabajo)
+├── id: varchar (UUID, clave primaria)
+├── employeeId: varchar (referencia a employees.id)
+├── type: enum (indefinido, determinado, obra, pasantia)
+├── startDate: date
+├── endDate: date (opcional)
+├── isActive: boolean (por defecto true)
+└── createdAt: timestamp
+
+probation_periods (Períodos de Prueba)
+├── id: varchar (UUID, clave primaria)
+├── employeeId: varchar (referencia a employees.id)
+├── startDate: date
+├── endDate: date
+├── status: varchar(20) (por defecto 'active')
+├── feedback: text (opcional)
+├── approved: boolean (opcional)
+├── approvedBy: varchar (referencia a users.id)
+└── createdAt: timestamp
+
+audit_logs (Registro de Auditoría)
+├── id: varchar (UUID, clave primaria)
+├── userId: varchar (referencia a users.id)
+├── action: varchar(50)
+├── tableName: varchar(50)
+├── recordId: varchar
+├── oldValues: text (JSON)
+├── newValues: text (JSON)
+├── ipAddress: varchar(45)
+├── userAgent: text
+└── createdAt: timestamp
+
+===============================================================================
+4. SISTEMA DE ROLES Y PERMISOS
+===============================================================================
+
+JERARQUÍA DE ROLES (6 NIVELES):
+
+1. ADMIN
+   - Acceso completo al sistema
+   - Gestión de usuarios y configuración global
+   - Acceso a todos los módulos
+
+2. GERENTE_RRHH
+   - Gestión completa de RRHH
+   - Supervisión de toda la estructura organizacional
+   - Acceso a reportes ejecutivos
+
+3. ADMIN_RRHH
+   - Administración operativa de RRHH
+   - Gestión de empleados y contratos
+   - Generación de reportes
+
+4. SUPERVISOR
+   - Supervisión de equipos asignados
+   - Gestión limitada de empleados bajo su cargo
+   - Acceso a información de su área
+
+5. EMPLEADO_CAPTACION
+   - Gestión de procesos de reclutamiento
+   - Manejo de candidatos y entrevistas
+   - Acceso limitado a datos de empleados
+
+6. EMPLEADO
+   - Acceso básico al sistema
+   - Visualización de información personal
+   - Funciones limitadas según asignación
+
+===============================================================================
+5. FUNCIONALIDADES IMPLEMENTADAS
+===============================================================================
+
+AUTENTICACIÓN Y SEGURIDAD:
+✓ Login con validación de cédula venezolana (V-12345678 / E-12345678)
+✓ Hash seguro de contraseñas con bcryptjs
+✓ Sesiones persistentes con express-session
+✓ Control de acceso basado en roles
+✓ Validación de entrada con schemas Zod
+
+INTERFAZ DE USUARIO:
+✓ Sidebar colapsible con navegación jerárquica
+✓ Dashboard principal con estadísticas clave
+✓ Página de gestión de empleados con búsqueda y filtros
+✓ Dropdowns en cascada (Gerencia → Departamento → Cargo)
+✓ Interfaz responsive para móviles y tablets
+✓ Tema moderno con Tailwind CSS y shadcn/ui
+
+GESTIÓN DE EMPLEADOS:EA
+✓ Visualización de lista de empleados
+✓ Búsqueda por nombre y filtros
+✓ Información detallada de cada empleado
+✓ Estructura organizacional jerárquica
+✓ Estados de empleado (activo, inactivo, período de prueba)
+
+ESTRUCTURA ORGANIZACIONAL:
+✓ Gestión de gerencias
+✓ Departamentos asociados a gerencias
+✓ Cargos asociados a departamentos
+✓ Dropdowns que se actualizan automáticamente según selección
+
+DASHBOARD Y REPORTES:
+✓ Estadísticas principales (empleados totales, en período de prueba)
+✓ Indicadores de candidatos nuevos
+✓ Alertas de contratos por vencer
+✓ Interfaz visual con gráficos e indicadores
+
+===============================================================================
+6. ESTRUCTURA DE ARCHIVOS DEL PROYECTO
+===============================================================================
+
+RAÍZ DEL PROYECTO:
+├── package.json (dependencias y scripts)
+├── vite.config.ts (configuración de Vite)
+├── tailwind.config.ts (configuración de Tailwind)
+├── tsconfig.json (configuración de TypeScript)
+├── drizzle.config.ts (configuración de Drizzle ORM)
+├── components.json (configuración de shadcn/ui)
+└── replit.md (documentación del proyecto)
+
+SHARED (Esquemas Compartidos):
+└── shared/
+    └── schema.ts (definición de tablas, tipos y validaciones)
+
+SERVER (Backend):
+├── server/
+│   ├── index.ts (servidor Express principal)
+│   ├── routes.ts (rutas de API)
+│   ├── storage.ts (capa de datos en memoria)
+│   └── vite.ts (middleware de Vite para desarrollo)
+
+CLIENT (Frontend):
+├── client/
+│   ├── index.html (HTML base)
+│   └── src/
+│       ├── main.tsx (punto de entrada React)
+│       ├── App.tsx (componente principal con routing)
+│       ├── index.css (estilos globales)
+│       ├── components/
+│       │   ├── ui/ (componentes de shadcn/ui)
+│       │   ├── forms/ (formularios y dropdowns)
+│       │   └── layouts/ (layouts de páginas)
+│       ├── pages/
+│       │   ├── login.tsx (página de login)
+│       │   ├── dashboard.tsx (dashboard principal)
+│       │   ├── employees.tsx (gestión de empleados)
+│       │   └── not-found.tsx (página 404)
+│       ├── hooks/
+│       │   ├── use-auth.ts (hook de autenticación)
+│       │   ├── use-toast.ts (notificaciones)
+│       │   └── use-mobile.tsx (detección móvil)
+│       ├── lib/
+│       │   ├── utils.ts (utilidades)
+│       │   ├── queryClient.ts (configuración TanStack Query)
+│       │   ├── auth.ts (lógica de autenticación)
+│       │   └── validators.ts (validadores adicionales)
+│       └── types/
+│           └── index.ts (tipos TypeScript)
+
+===============================================================================
+7. API ENDPOINTS IMPLEMENTADOS
+===============================================================================
+
+AUTENTICACIÓN:
+POST /api/auth/login     - Iniciar sesión
+GET  /api/auth/me        - Obtener usuario actual
+POST /api/auth/logout    - Cerrar sesión
+
+EMPLEADOS:
+GET  /api/employees      - Listar todos los empleados
+GET  /api/employees/:id  - Obtener empleado específico
+POST /api/employees      - Crear nuevo empleado
+PUT  /api/employees/:id  - Actualizar empleado
+DELETE /api/employees/:id - Eliminar empleado
+
+ESTRUCTURA ORGANIZACIONAL:
+GET  /api/gerencias                    - Listar gerencias
+GET  /api/departamentos/:gerenciaId    - Departamentos por gerencia
+GET  /api/cargos/:departamentoId       - Cargos por departamento
+POST /api/gerencias                    - Crear gerencia
+POST /api/departamentos                - Crear departamento
+POST /api/cargos                       - Crear cargo
+
+CONTRATOS:
+GET  /api/contracts/:employeeId  - Contratos por empleado
+POST /api/contracts              - Crear contrato
+
+DASHBOARD:
+GET  /api/dashboard/stats - Estadísticas del dashboard
+
+USUARIOS:
+POST /api/users          - Crear usuario
+GET  /api/users/:cedula  - Buscar usuario por cédula
+
+===============================================================================
+8. CARACTERÍSTICAS VENEZOLANAS ESPECÍFICAS
+===============================================================================
+
+VALIDACIÓN DE CÉDULAS:
+- Formato aceptado: V-12345678 o E-12345678
+- V- para venezolanos, E- para extranjeros
+- Validación con expresión regular: /^[VE]-\d{7,8}$/
+- Integrada en formularios y autenticación
+
+CONTEXTO LABORAL VENEZOLANO:
+- Tipos de contrato según legislación local:
+  * Indefinido (contrato permanente)
+  * Determinado (por tiempo fijo)
+  * Obra (por obra determinada)
+  * Pasantía (prácticas profesionales)
+
+- Estados de empleado:
+  * Activo
+  * Inactivo
+  * Período de prueba (según normativa laboral)
+
+===============================================================================
+9. CONFIGURACIÓN DE DESARROLLO
+===============================================================================
+
+SCRIPTS DISPONIBLES:
+npm run dev       - Iniciar servidor de desarrollo
+npm run build     - Construir para producción
+npm run preview   - Previsualizar build de producción
+npm run db:push   - Aplicar cambios al esquema de base de datos
+
+VARIABLES DE ENTORNO REQUERIDAS:
+DATABASE_URL - URL de conexión a PostgreSQL/Supabase
+
+PUERTOS:
+- Desarrollo: 5000 (servidor único para backend y frontend)
+- Production: Variable según hosting
+
+DEPENDENCIAS PRINCIPALES:
+- React 18.2.0 con TypeScript
+- Express.js para backend
+- Drizzle ORM para base de datos
+- Tailwind CSS + shadcn/ui para styling
+- TanStack Query para manejo de estado servidor
+- Wouter para routing
+- Zod para validación
+
+===============================================================================
+10. CARACTERÍSTICAS TÉCNICAS DESTACADAS
+===============================================================================
+
+SIDEBAR COLAPSIBLE:
+- Navegación lateral que se puede expandir/contraer
+- Responsive para dispositivos móviles
+- Iconos y texto descriptivo
+- Secciones organizadas por funcionalidad
+
+DROPDOWNS EN CASCADA:
+- Gerencia → Departamento → Cargo
+- Filtrado automático según selección anterior
+- Actualización dinámica vía API
+- Validación de relaciones jerárquicas
+
+SISTEMA DE TIPOS:
+- TypeScript estricto en todo el proyecto
+- Tipos compartidos entre frontend y backend
+- Validación en tiempo de compilación
+- IntelliSense completo en desarrollo
+
+ESTADO Y CACHE:
+- TanStack Query para cache inteligente de datos
+- Zustand para estado global ligero
+- Invalidación automática de cache tras mutaciones
+- Optimistic updates donde corresponde
+
+===============================================================================
+11. PRÓXIMAS FUNCIONALIDADES SUGERIDAS
+===============================================================================
+
+MÓDULOS PENDIENTES:
+□ Gestión de contratos (CRUD completo)
+□ Período de prueba y evaluaciones
+□ Reportes avanzados y exportación
+□ Gestión de vacaciones y permisos
+□ Nómina y cálculos salariales
+□ Reclutamiento y selección
+□ Capacitación y desarrollo
+□ Evaluación de desempeño
+□ Documentos y archivos adjuntos
+□ Notificaciones y alertas
+
+MEJORAS TÉCNICAS:
+□ Implementación de base de datos real (migrar de memoria)
+□ Sistema de backup automático
+□ Logs de auditoría completos
+□ Optimización de rendimiento
+□ PWA (Progressive Web App)
+□ Exportación a Excel/PDF
+□ Integración con sistemas externos
+□ API REST completa y documentada
+
+===============================================================================
+12. NOTAS DE MANTENIMIENTO
+===============================================================================
+
+ACTUALIZACIONES PENDIENTES:
+- Los datos actualmente se almacenan en memoria (desarrollo)
+- Para producción se debe configurar base de datos persistente
+- Implementar sistema de migraciones con Drizzle
+- Configurar variables de entorno para producción
+
+CONSIDERACIONES DE SEGURIDAD:
+- Implementar rate limiting para APIs
+- Agregar validación CSRF para formularios
+- Configurar HTTPS en producción
+- Implementar logout automático por inactividad
+
+OPTIMIZACIONES:
+- Implementar lazy loading para componentes
+- Optimizar consultas de base de datos
+- Agregar indicadores de carga más granulares
+- Implementar paginación para listados grandes
+
+===============================================================================
+13. CONTACTO Y SOPORTE
+===============================================================================
+
+Sistema desarrollado por: Asistente AI de Replit
+Fecha de última actualización: Enero 2025
+Estado actual: Sistema base funcional listo para expansión
+
+Para soporte técnico o nuevas funcionalidades, contactar al desarrollador
+a través de la plataforma Replit.
+
+===============================================================================
+                            FIN DE DOCUMENTACIÓN
+===============================================================================

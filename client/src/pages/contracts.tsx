@@ -12,8 +12,7 @@ import { Label } from "@/components/ui/label";
 
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatDate, formatDateForInput } from "@/lib/date-utils";
 import type { Contract, Employee } from "@shared/schema";
 
 interface ContractWithEmployee extends Contract {
@@ -39,8 +38,8 @@ function ContractForm({ contract, onClose }: { contract?: Contract; onClose: () 
   const [formData, setFormData] = useState({
     employeeId: contract?.employeeId || "",
     type: contract?.type || "indefinido",
-    startDate: contract?.startDate || "",
-    endDate: contract?.endDate || "",
+    startDate: contract?.startDate ? formatDateForInput(contract.startDate) : "",
+    endDate: contract?.endDate ? formatDateForInput(contract.endDate) : "",
     isActive: contract?.isActive ?? true
   });
 
@@ -269,9 +268,9 @@ export default function Contracts() {
     return matchesSearch && matchesType && matchesStatus;
   });
 
-  const formatDate = (date: string | null) => {
+  const formatContractDate = (date: string | null) => {
     if (!date) return "Sin fecha";
-    return format(new Date(date), "dd/MM/yyyy", { locale: es });
+    return formatDate(date);
   };
 
   const isExpiringSoon = (contract: Contract) => {
@@ -447,10 +446,10 @@ export default function Contracts() {
                         {contractTypeLabels[contract.type]}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatDate(contract.startDate)}</TableCell>
+                    <TableCell>{formatContractDate(contract.startDate)}</TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
-                        <span>{formatDate(contract.endDate)}</span>
+                        <span>{formatContractDate(contract.endDate)}</span>
                         {isExpiringSoon(contract) && (
                           <AlertCircle className="w-4 h-4 text-orange-500" />
                         )}

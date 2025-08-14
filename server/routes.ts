@@ -8,6 +8,13 @@ import MemoryStore from "memorystore";
 
 const MemoryStoreConstructor = MemoryStore(session);
 
+// Utility function to normalize date format - prevents timezone issues
+function normalizeDateString(dateInput: string | Date): string {
+  if (!dateInput) return '';
+  const date = typeof dateInput === 'string' ? new Date(dateInput + 'T00:00:00') : dateInput;
+  return date.toISOString().split('T')[0];
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration
   app.use(session({
@@ -173,29 +180,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const employee = await storage.createEmployee(employeeValidation.data);
 
-      // Create contract if provided
+      // Create contract if provided - ensure same date format
       if (req.body.contractType) {
+        const contractStartDate = normalizeDateString(req.body.contractStartDate || req.body.startDate);
         await storage.createContract({
           employeeId: employee.id,
           type: req.body.contractType,
-          startDate: req.body.contractStartDate || req.body.startDate,
-          endDate: req.body.contractEndDate || null,
+          startDate: contractStartDate, // Normalized date format
+          endDate: req.body.contractEndDate ? normalizeDateString(req.body.contractEndDate) : null,
           isActive: true
         });
       }
 
-      // Auto-create probation period for new hires (30 days)
+      // Auto-create probation period for new hires (30 days) - using same date format
       if (req.body.generateProbation !== false) { // Default true unless explicitly false
-        const startDate = new Date(req.body.startDate || req.body.contractStartDate);
+        const employeeStartDate = normalizeDateString(req.body.startDate || req.body.contractStartDate);
+        const startDate = new Date(employeeStartDate + 'T00:00:00');
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + 30); // 30 days probation
         
         await storage.createProbationPeriod({
           employeeId: employee.id,
           type: "nuevo_ingreso",
-          startDate: startDate.toISOString().split('T')[0],
-          endDate: endDate.toISOString().split('T')[0],
-          status: "activo"
+          startDate: employeeStartDate, // Normalized date format
+          endDate: normalizeDateString(endDate),
+          status: "activo",
+          evaluationNotes: null,
+          finalEvaluation: null,
+          evaluatedBy: null,
+          evaluationDate: null,
+          extensionReason: null,
+          extensionDate: null,
+          originalEndDate: null,
+          supervisorRecommendation: null,
+          hrNotes: null,
+          approved: null
         });
       }
 
@@ -234,6 +253,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!employee) {
         return res.status(404).json({ error: "Empleado no encontrado" });
       }
+
+      // Sincronizar contrato si se actualiza la fecha de inicio
+      if (validation.data.startDate) {
+        try {
+          // Buscar contratos activos del empleado
+          const contracts = await storage.getContracts();
+          const employeeContracts = contracts.filter(c => c.employeeId === req.params.id && c.isActive);
+          
+          // Actualizar la fecha de inicio de todos los contratos activos
+          for (const contract of employeeContracts) {
+            await storage.updateContract(contract.id, {
+              startDate: normalizeDateString(validation.data.startDate)
+            });
+          }
+        } catch (syncError) {
+          console.warn("[CONTRACT_SYNC_WARNING]", syncError);
+          // No fallar la actualización del empleado por errores de sincronización
+        }
+      }
+
       res.json({ success: true, employee });
     } catch (error) {
       console.error("[UPDATE_EMPLOYEE_ERROR]", error);
@@ -243,8 +282,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/employees/:id", requireAuth, async (req, res) => {
     try {
-      const deleted = await storage.deleteEmployee(req.params.id);
-      if (!deleted) {
+      // Note: Implementing soft delete by setting employee as inactive
+      const updated = await storage.updateEmployee(req.params.id, { status: "inactivo" });
+      if (!updated) {
         return res.status(404).json({ error: "Empleado no encontrado" });
       }
       res.json({ success: true });
@@ -361,6 +401,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!contract) {
         return res.status(404).json({ error: "Contrato no encontrado" });
       }
+
+      // Sincronizar empleado si se actualiza la fecha de inicio del contrato
+      if (validation.data.startDate && contract.employeeId) {
+        try {
+          await storage.updateEmployee(contract.employeeId, {
+            startDate: normalizeDateString(validation.data.startDate)
+          });
+        } catch (syncError) {
+          console.warn("[EMPLOYEE_SYNC_WARNING]", syncError);
+          // No fallar la actualización del contrato por errores de sincronización
+        }
+      }
+
       res.json({ success: true, contract });
     } catch (error) {
       console.error("[UPDATE_CONTRACT_ERROR]", error);
@@ -536,7 +589,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/probation-periods-expiring-soon", requireAuth, async (req, res) => {
     try {
-      const expiringProbationPeriods = await storage.getExpiringProbationPeriods();
+      // Filter probation periods that are expiring soon (within 7 days)
+      const allPeriods = await storage.getProbationPeriods();
+      const expiringProbationPeriods = allPeriods.filter(period => {
+        const endDate = new Date(period.endDate);
+        const today = new Date();
+        const sevenDaysFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+        return period.status === "activo" && endDate <= sevenDaysFromNow && endDate >= today;
+      });
       res.json(expiringProbationPeriods);
     } catch (error) {
       console.error("[GET_EXPIRING_PROBATION_PERIODS_ERROR]", error);

@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, FileText, Mail, Phone, User, Edit, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { CandidateForm } from "@/components/forms/candidate-form";
-import type { CandidateWithRelations } from "@/types";
+import { formatDate } from "@/lib/date-utils";
+import type { CandidateWithRelations } from "@shared/schema";
 
 export function CandidatesPage() {
   const [searchTerm, setSearchTerm] = useState("");

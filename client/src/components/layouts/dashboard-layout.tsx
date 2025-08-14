@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CurrentDate } from "@/components/ui/current-date";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -105,7 +106,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
         },
         { 
           path: "/job-offers", 
-          label: "Ofertas de Trabajo", 
+          label: "Solicitudes de Personal", 
           icon: Briefcase,
           active: location.startsWith("/job-offers")
         }
@@ -153,11 +154,20 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               <ChevronLeft className="h-4 w-4" />
             )}
           </Button>
-          <h1 className="text-xl font-semibold text-foreground">
-            {location === "/dashboard" && "Dashboard Principal"}
-            {location === "/employees" && "Gestión de Empleados"}
-            {location === "/contracts" && "Gestión de Contratos"}
-          </h1>
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">
+              {location === "/dashboard" && "Dashboard Principal"}
+              {location === "/employees" && "Gestión de Empleados"}
+              {location === "/contracts" && "Gestión de Contratos"}
+              {location === "/candidates" && "Gestión de Candidatos"}
+              {location === "/probation" && "Períodos de Prueba"}
+              {location === "/egresos" && "Gestión de Egresos"}
+              {location === "/job-offers" && "Solicitudes de Personal"}
+              {location === "/roles" && "Roles y Permisos"}
+              {location === "/reports" && "Reportes"}
+            </h1>
+            <CurrentDate />
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">

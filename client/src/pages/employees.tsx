@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, Users, Edit2, Eye, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,10 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SortableTableHeader } from "@/components/ui/sortable-table-header";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { EmployeeForm } from "@/components/forms/employee-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { formatDate } from "@/lib/date-utils";
 import type { EmployeeWithRelations } from "@shared/schema";
 
 export default function Employees() {
@@ -19,6 +21,7 @@ export default function Employees() {
   const [viewingEmployee, setViewingEmployee] = useState<EmployeeWithRelations | null>(null);
   const [deleteEmployeeId, setDeleteEmployeeId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -46,11 +49,34 @@ export default function Employees() {
     }
   });
 
-  const filteredEmployees = employees.filter(employee =>
-    employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.user.cedula.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const sortedAndFilteredEmployees = useMemo(() => {
+    let filtered = employees.filter(employee =>
+      employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.user.cedula.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    if (sortConfig) {
+      filtered.sort((a, b) => {
+        const aValue = getNestedValue(a, sortConfig.key);
+        const bValue = getNestedValue(b, sortConfig.key);
+        
+        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [employees, searchTerm, sortConfig]);
+
+  const getNestedValue = (obj: any, path: string) => {
+    return path.split('.').reduce((current, key) => current?.[key], obj) || '';
+  };
+
+  const handleSort = (key: string, direction: 'asc' | 'desc') => {
+    setSortConfig({ key, direction });
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -165,14 +191,14 @@ export default function Employees() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card>
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{employees.length}</p>
+              <p className="text-2xl font-bold text-foreground">{sortedAndFilteredEmployees.length}</p>
               <p className="text-sm text-muted-foreground">Total Empleados</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-foreground">
-                {employees.filter(e => e.status === "activo").length}
+                {sortedAndFilteredEmployees.filter(e => e.status === "activo").length}
               </p>
               <p className="text-sm text-muted-foreground">Activos</p>
             </CardContent>
@@ -180,7 +206,7 @@ export default function Employees() {
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-foreground">
-                {employees.filter(e => e.status === "periodo_prueba").length}
+                {sortedAndFilteredEmployees.filter(e => e.status === "periodo_prueba").length}
               </p>
               <p className="text-sm text-muted-foreground">En Período Prueba</p>
             </CardContent>
@@ -189,7 +215,7 @@ export default function Employees() {
 
         {/* Employee List */}
         <div className="grid gap-4">
-          {filteredEmployees.map((employee) => (
+          {sortedAndFilteredEmployees.map((employee) => (
             <Card key={employee.id} className="hover:shadow-md transition-shadow">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -261,7 +287,7 @@ export default function Employees() {
         </div>
 
         {/* Empty State */}
-        {filteredEmployees.length === 0 && !isLoading && (
+        {sortedAndFilteredEmployees.length === 0 && !isLoading && (
           <Card>
             <CardContent className="p-8 text-center">
               <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -343,7 +369,7 @@ export default function Employees() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Fecha de Ingreso</label>
-                  <p className="text-sm">{new Date(viewingEmployee.startDate).toLocaleDateString()}</p>
+                  <p className="text-sm">{formatDate(viewingEmployee.startDate)}</p>
                 </div>
               </div>
 

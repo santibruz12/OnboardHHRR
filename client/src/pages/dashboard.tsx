@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { 
   Users, 
   Clock, 
@@ -19,6 +20,7 @@ import type { DashboardStats } from "@shared/schema";
 
 export default function Dashboard() {
   const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
+  const [, setLocation] = useLocation();
 
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"]
@@ -103,7 +105,7 @@ export default function Dashboard() {
       icon: FileText,
       iconBg: "bg-green-100",
       iconColor: "text-green-600",
-      action: () => {}
+      action: () => setLocation("/contracts")
     },
     {
       title: "Generar Reporte",
@@ -111,7 +113,7 @@ export default function Dashboard() {
       icon: BarChart3,
       iconBg: "bg-purple-100",
       iconColor: "text-purple-600",
-      action: () => {}
+      action: () => setLocation("/reports")
     },
     {
       title: "Solicitar Egreso",
@@ -119,7 +121,7 @@ export default function Dashboard() {
       icon: DoorOpen,
       iconBg: "bg-amber-100",
       iconColor: "text-amber-600",
-      action: () => {}
+      action: () => setLocation("/egresos")
     }
   ];
 
@@ -273,7 +275,7 @@ export default function Dashboard() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Actividad Reciente</CardTitle>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => setLocation("/employees")}>
                 Ver todo
               </Button>
             </div>

@@ -14,8 +14,7 @@ import { Plus, Eye, Edit, Users, Calendar, MapPin, DollarSign } from "lucide-rea
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatDate, formatDateForInput, getCurrentDateForInput } from "@/lib/date-utils";
 
 const jobOfferFormSchema = z.object({
   titulo: z.string().min(1, "Título requerido"),

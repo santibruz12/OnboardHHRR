@@ -19,8 +19,7 @@ import {
   Loader2
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatDate, formatDateForInput } from "@/lib/date-utils";
 
 const reportTypes = [
   {

@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Calendar, Clock, User, CheckCircle, XCircle, AlertTriangle, Edit, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { ProbationForm } from "@/components/forms/probation-form";
-import type { ProbationPeriodWithRelations } from "@/types";
+import { formatDate } from "@/lib/date-utils";
+import type { ProbationPeriodWithRelations } from "@shared/schema";
 
 export function ProbationPage() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -295,8 +296,8 @@ export function ProbationPage() {
                     <div className="space-y-1">
                       <div className="flex items-center text-sm">
                         <Calendar className="mr-1 h-3 w-3" />
-                        {new Date(probationPeriod.startDate).toLocaleDateString("es-VE")} - 
-                        {new Date(probationPeriod.endDate).toLocaleDateString("es-VE")}
+                        {formatDate(probationPeriod.startDate)} - 
+                        {formatDate(probationPeriod.endDate)}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {Math.ceil((new Date(probationPeriod.endDate).getTime() - new Date(probationPeriod.startDate).getTime()) / (1000 * 60 * 60 * 24))} días

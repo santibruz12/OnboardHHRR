@@ -14,8 +14,7 @@ import { Plus, Eye, Edit, Check, X, FileText } from "lucide-react";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { Loader2 } from "lucide-react";
-import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { formatDate, formatDateForInput, getCurrentDateForInput } from "@/lib/date-utils";
 
 const egresoFormSchema = z.object({
   employeeId: z.string().min(1, "Empleado requerido"),
@@ -368,7 +367,7 @@ export default function EgresosPage() {
                 </div>
                 <div>
                   <p className="font-medium text-muted-foreground">Fecha Solicitud</p>
-                  <p>{format(new Date(egreso.fechaSolicitud), "dd 'de' MMM yyyy", { locale: es })}</p>
+                  <p>{formatDate(egreso.fechaSolicitud)}</p>
                 </div>
                 <div>
                   <p className="font-medium text-muted-foreground">Solicitado por</p>
@@ -377,7 +376,7 @@ export default function EgresosPage() {
                 {egreso.fechaEfectiva && (
                   <div>
                     <p className="font-medium text-muted-foreground">Fecha Efectiva</p>
-                    <p>{format(new Date(egreso.fechaEfectiva), "dd 'de' MMM yyyy", { locale: es })}</p>
+                    <p>{formatDate(egreso.fechaEfectiva)}</p>
                   </div>
                 )}
               </div>

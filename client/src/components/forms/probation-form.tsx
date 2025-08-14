@@ -21,7 +21,8 @@ import type { ProbationPeriodWithRelations, EmployeeWithRelations } from "@/type
 const probationFormSchema = insertProbationPeriodSchema.extend({
   startDate: z.string().min(1, "Fecha de inicio requerida"),
   endDate: z.string().min(1, "Fecha de fin requerida"),
-  employeeId: z.string().min(1, "Empleado requerido")
+  employeeId: z.string().min(1, "Empleado requerido"),
+  type: z.enum(["nuevo_ingreso", "movimiento_interno"]).default("nuevo_ingreso")
 });
 
 type ProbationFormData = z.infer<typeof probationFormSchema>;
@@ -44,6 +45,7 @@ export function ProbationForm({ probationPeriod, onSuccess }: ProbationFormProps
     resolver: zodResolver(probationFormSchema),
     defaultValues: {
       employeeId: probationPeriod?.employeeId || "",
+      type: probationPeriod?.type || "nuevo_ingreso",
       startDate: probationPeriod?.startDate || "",
       endDate: probationPeriod?.endDate || "",
       status: probationPeriod?.status || "activo",
@@ -54,7 +56,17 @@ export function ProbationForm({ probationPeriod, onSuccess }: ProbationFormProps
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: ProbationFormData) => apiRequest("/api/probation-periods", "POST", data),
+    mutationFn: (data: ProbationFormData) => {
+      console.log("Creating probation period with data:", data);
+      return fetch("/api/probation-periods", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(data)
+      }).then(res => res.json());
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/probation-periods"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -76,8 +88,17 @@ export function ProbationForm({ probationPeriod, onSuccess }: ProbationFormProps
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: ProbationFormData) => 
-      apiRequest(`/api/probation-periods/${probationPeriod!.id}`, "PATCH", data),
+    mutationFn: (data: ProbationFormData) => {
+      console.log("Updating probation period with data:", data);
+      return fetch(`/api/probation-periods/${probationPeriod!.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(data)
+      }).then(res => res.json());
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/probation-periods"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
@@ -113,36 +134,61 @@ export function ProbationForm({ probationPeriod, onSuccess }: ProbationFormProps
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         
-        {/* Employee Selection */}
-        <FormField
-          control={form.control}
-          name="employeeId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Empleado *</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar empleado" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
-                      <div className="flex flex-col">
-                        <span>{employee.fullName}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {employee.user.cedula} - {employee.cargo.name}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          {/* Employee Selection */}
+          <FormField
+            control={form.control}
+            name="employeeId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Empleado *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar empleado" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {employees.map((employee) => (
+                      <SelectItem key={employee.id} value={employee.id}>
+                        <div className="flex flex-col">
+                          <span>{employee.fullName}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {employee.user.cedula} - {employee.cargo.name}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Probation Type */}
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Tipo de Período *</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar tipo" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="nuevo_ingreso">Nuevo Ingreso</SelectItem>
+                    <SelectItem value="movimiento_interno">Movimiento Interno / Ascenso</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         {/* Date Fields */}
         <div className="grid grid-cols-2 gap-4">

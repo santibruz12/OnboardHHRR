@@ -184,6 +184,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Auto-create probation period for new hires (30 days)
+      if (req.body.generateProbation !== false) { // Default true unless explicitly false
+        const startDate = new Date(req.body.startDate || req.body.contractStartDate);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 30); // 30 days probation
+        
+        await storage.createProbationPeriod({
+          employeeId: employee.id,
+          type: "nuevo_ingreso",
+          startDate: startDate.toISOString().split('T')[0],
+          endDate: endDate.toISOString().split('T')[0],
+          status: "activo"
+        });
+      }
+
       const fullEmployee = await storage.getEmployee(employee.id);
       res.status(201).json({ success: true, employee: fullEmployee });
     } catch (error) {
@@ -418,16 +433,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cedula: req.body.cedula,
         fullName: req.body.fullName,
         email: req.body.email,
-        phone: req.body.phone,
-        birthDate: req.body.birthDate,
+        phone: req.body.phone || null,
+        birthDate: req.body.birthDate || null,
         cargoId: req.body.cargoId,
-        cvUrl: req.body.cvUrl,
-        notes: req.body.notes,
+        cvUrl: req.body.cvUrl || null,
+        notes: req.body.notes || null,
         status: req.body.status || "en_evaluacion",
-        submittedBy: (req as any).user.id,
+        submittedBy: (req.session as any).user.id,
         evaluatedBy: req.body.evaluatedBy || null,
         evaluationNotes: req.body.evaluationNotes || null,
-        evaluationDate: req.body.evaluationDate || null
+        evaluationDate: req.body.evaluationDate ? new Date(req.body.evaluationDate) : null
       });
 
       if (!validation.success) {
@@ -447,9 +462,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/candidates/:id", requireAuth, async (req, res) => {
+  app.put("/api/candidates/:id", requireAuth, async (req, res) => {
     try {
-      const validation = insertCandidateSchema.partial().safeParse(req.body);
+      const validation = insertCandidateSchema.partial().safeParse({
+        cedula: req.body.cedula,
+        fullName: req.body.fullName,
+        email: req.body.email,
+        phone: req.body.phone || null,
+        birthDate: req.body.birthDate || null,
+        cargoId: req.body.cargoId,
+        cvUrl: req.body.cvUrl || null,
+        notes: req.body.notes || null,
+        status: req.body.status,
+        evaluationNotes: req.body.evaluationNotes || null,
+        evaluatedBy: req.body.evaluatedBy || null,
+        evaluationDate: req.body.evaluationDate ? new Date(req.body.evaluationDate) : null
+      });
+      
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Datos inválidos", 
@@ -530,13 +559,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("[CREATE_PROBATION_PERIOD_REQUEST]", JSON.stringify(req.body, null, 2));
       
       const validation = insertProbationPeriodSchema.safeParse({
-        ...req.body,
+        employeeId: req.body.employeeId,
+        type: req.body.type || "nuevo_ingreso",
+        startDate: req.body.startDate,
+        endDate: req.body.endDate,
         status: req.body.status || "activo",
         evaluatedBy: req.body.evaluatedBy || null,
         evaluationNotes: req.body.evaluationNotes || null,
-        evaluationDate: req.body.evaluationDate || null,
+        evaluationDate: req.body.evaluationDate ? new Date(req.body.evaluationDate) : null,
         extensionReason: req.body.extensionReason || null,
-        approved: req.body.approved !== undefined ? req.body.approved : null
+        extensionDate: req.body.extensionDate || null,
+        originalEndDate: req.body.originalEndDate || null,
+        supervisorRecommendation: req.body.supervisorRecommendation || null,
+        hrNotes: req.body.hrNotes || null,
+        approved: req.body.approved !== undefined ? req.body.approved : null,
+        finalEvaluation: req.body.finalEvaluation || null
       });
       if (!validation.success) {
         console.log("[PROBATION_PERIOD_VALIDATION_ERROR]", validation.error.errors);
@@ -555,9 +592,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/probation-periods/:id", requireAuth, async (req, res) => {
+  app.put("/api/probation-periods/:id", requireAuth, async (req, res) => {
     try {
-      const validation = insertProbationPeriodSchema.partial().safeParse(req.body);
+      const validation = insertProbationPeriodSchema.partial().safeParse({
+        employeeId: req.body.employeeId,
+        type: req.body.type,
+        startDate: req.body.startDate,
+        endDate: req.body.endDate,
+        status: req.body.status,
+        evaluatedBy: req.body.evaluatedBy || null,
+        evaluationNotes: req.body.evaluationNotes || null,
+        evaluationDate: req.body.evaluationDate ? new Date(req.body.evaluationDate) : null,
+        extensionReason: req.body.extensionReason || null,
+        extensionDate: req.body.extensionDate || null,
+        originalEndDate: req.body.originalEndDate || null,
+        supervisorRecommendation: req.body.supervisorRecommendation || null,
+        hrNotes: req.body.hrNotes || null,
+        approved: req.body.approved !== undefined ? req.body.approved : null,
+        finalEvaluation: req.body.finalEvaluation || null
+      });
+      
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Datos inválidos", 
@@ -615,18 +669,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/egresos", requireAuth, async (req, res) => {
     try {
-      const user = (req as any).user;
+      const user = (req.session as any)?.user;
       if (!user || !user.id) {
         return res.status(401).json({ error: "Usuario no autenticado" });
       }
 
       const validation = insertEgresoSchema.safeParse({
-        ...req.body,
+        employeeId: req.body.employeeId,
+        motivo: req.body.motivo,
+        fechaSolicitud: req.body.fechaSolicitud,
         status: req.body.status || "solicitado",
         solicitadoPor: user.id,
         aprobadoPor: req.body.aprobadoPor || null,
-        fechaAprobacion: req.body.fechaAprobacion || null,
-        fechaEfectiva: req.body.fechaEfectiva || null,
+        fechaAprobacion: req.body.fechaAprobacion ? new Date(req.body.fechaAprobacion) : null,
+        fechaEfectiva: req.body.fechaEfectiva ? new Date(req.body.fechaEfectiva) : null,
         motivoRechazo: req.body.motivoRechazo || null,
         observaciones: req.body.observaciones || null,
         documentosEntregados: req.body.documentosEntregados || null,
@@ -650,9 +706,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/egresos/:id", requireAuth, async (req, res) => {
+  app.put("/api/egresos/:id", requireAuth, async (req, res) => {
     try {
-      const validation = insertEgresoSchema.partial().safeParse(req.body);
+      const validation = insertEgresoSchema.partial().safeParse({
+        employeeId: req.body.employeeId,
+        motivo: req.body.motivo,
+        fechaSolicitud: req.body.fechaSolicitud,
+        status: req.body.status,
+        solicitadoPor: req.body.solicitadoPor,
+        aprobadoPor: req.body.aprobadoPor || null,
+        fechaAprobacion: req.body.fechaAprobacion ? new Date(req.body.fechaAprobacion) : null,
+        fechaEfectiva: req.body.fechaEfectiva ? new Date(req.body.fechaEfectiva) : null,
+        motivoRechazo: req.body.motivoRechazo || null,
+        observaciones: req.body.observaciones || null,
+        documentosEntregados: req.body.documentosEntregados || null,
+        activosEntregados: req.body.activosEntregados || null,
+        liquidacionCalculada: req.body.liquidacionCalculada || null
+      });
+      
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Datos inválidos", 
@@ -697,13 +768,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/job-offers", requireAuth, async (req, res) => {
     try {
-      const user = (req as any).user;
+      const user = (req.session as any)?.user;
       if (!user || !user.id) {
         return res.status(401).json({ error: "Usuario no autenticado" });
       }
 
       const validation = insertJobOfferSchema.safeParse({
-        ...req.body,
+        cargoId: req.body.cargoId,
+        titulo: req.body.titulo,
+        descripcion: req.body.descripcion,
+        tipoContrato: req.body.tipoContrato,
         status: req.body.status || "borrador",
         creadoPor: user.id,
         experienciaRequerida: req.body.experienciaRequerida || null,
@@ -711,8 +785,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         habilidadesRequeridas: req.body.habilidadesRequeridas || null,
         modalidadTrabajo: req.body.modalidadTrabajo || null,
         ubicacion: req.body.ubicacion || null,
-        fechaInicioPublicacion: req.body.fechaInicioPublicacion || null,
-        fechaCierrePublicacion: req.body.fechaCierrePublicacion || null,
+        fechaInicioPublicacion: req.body.fechaInicioPublicacion ? new Date(req.body.fechaInicioPublicacion) : null,
+        fechaCierrePublicacion: req.body.fechaCierrePublicacion ? new Date(req.body.fechaCierrePublicacion) : null,
         supervisorAsignado: req.body.supervisorAsignado || null,
         notas: req.body.notas || null
       });
@@ -733,9 +807,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/job-offers/:id", requireAuth, async (req, res) => {
+  app.put("/api/job-offers/:id", requireAuth, async (req, res) => {
     try {
-      const validation = insertJobOfferSchema.partial().safeParse(req.body);
+      const validation = insertJobOfferSchema.partial().safeParse({
+        cargoId: req.body.cargoId,
+        titulo: req.body.titulo,
+        descripcion: req.body.descripcion,
+        tipoContrato: req.body.tipoContrato,
+        status: req.body.status,
+        creadoPor: req.body.creadoPor,
+        experienciaRequerida: req.body.experienciaRequerida || null,
+        educacionRequerida: req.body.educacionRequerida || null,
+        habilidadesRequeridas: req.body.habilidadesRequeridas || null,
+        modalidadTrabajo: req.body.modalidadTrabajo || null,
+        ubicacion: req.body.ubicacion || null,
+        fechaInicioPublicacion: req.body.fechaInicioPublicacion ? new Date(req.body.fechaInicioPublicacion) : null,
+        fechaCierrePublicacion: req.body.fechaCierrePublicacion ? new Date(req.body.fechaCierrePublicacion) : null,
+        supervisorAsignado: req.body.supervisorAsignado || null,
+        notas: req.body.notas || null
+      });
+      
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Datos inválidos", 
@@ -778,15 +869,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/job-applications", requireAuth, async (req, res) => {
     try {
       const validation = insertJobApplicationSchema.safeParse({
-        ...req.body,
+        jobOfferId: req.body.jobOfferId,
+        candidateId: req.body.candidateId,
         status: req.body.status || "aplicado",
-        fechaAplicacion: req.body.fechaAplicacion || new Date().toISOString(),
-        fechaEntrevista: req.body.fechaEntrevista || null,
+        fechaAplicacion: req.body.fechaAplicacion ? new Date(req.body.fechaAplicacion) : new Date(),
+        fechaEntrevista: req.body.fechaEntrevista ? new Date(req.body.fechaEntrevista) : null,
         entrevistadoPor: req.body.entrevistadoPor || null,
         notasEntrevista: req.body.notasEntrevista || null,
         evaluadoPor: req.body.evaluadoPor || null,
         notasEvaluacion: req.body.notasEvaluacion || null,
-        fechaEvaluacion: req.body.fechaEvaluacion || null
+        fechaEvaluacion: req.body.fechaEvaluacion ? new Date(req.body.fechaEvaluacion) : null
       });
       if (!validation.success) {
         return res.status(400).json({ 
@@ -804,9 +896,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/job-applications/:id", requireAuth, async (req, res) => {
+  app.put("/api/job-applications/:id", requireAuth, async (req, res) => {
     try {
-      const validation = insertJobApplicationSchema.partial().safeParse(req.body);
+      const validation = insertJobApplicationSchema.partial().safeParse({
+        jobOfferId: req.body.jobOfferId,
+        candidateId: req.body.candidateId,
+        status: req.body.status,
+        fechaAplicacion: req.body.fechaAplicacion ? new Date(req.body.fechaAplicacion) : null,
+        fechaEntrevista: req.body.fechaEntrevista ? new Date(req.body.fechaEntrevista) : null,
+        entrevistadoPor: req.body.entrevistadoPor || null,
+        notasEntrevista: req.body.notasEntrevista || null,
+        evaluadoPor: req.body.evaluadoPor || null,
+        notasEvaluacion: req.body.notasEvaluacion || null,
+        fechaEvaluacion: req.body.fechaEvaluacion ? new Date(req.body.fechaEvaluacion) : null
+      });
+      
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Datos inválidos", 

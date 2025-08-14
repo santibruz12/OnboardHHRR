@@ -16,6 +16,7 @@ import type { ProbationPeriodWithRelations } from "@/types";
 export function ProbationPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingProbationPeriod, setEditingProbationPeriod] = useState<ProbationPeriodWithRelations | null>(null);
   const { toast } = useToast();
@@ -26,7 +27,11 @@ export function ProbationPage() {
   });
 
   const deleteProbationPeriodMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/probation-periods/${id}`, "DELETE"),
+    mutationFn: (id: string) => 
+      fetch(`/api/probation-periods/${id}`, {
+        method: "DELETE",
+        credentials: "include"
+      }).then(res => res.json()),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/probation-periods"] });
       toast({
@@ -50,8 +55,9 @@ export function ProbationPage() {
       probationPeriod.employee.cargo.name.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || probationPeriod.status === statusFilter;
+    const matchesType = typeFilter === "all" || probationPeriod.type === typeFilter;
     
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesType;
   });
 
   const getStatusBadge = (status: string) => {
@@ -229,6 +235,17 @@ export function ProbationPage() {
             <SelectItem value="terminado">Terminado</SelectItem>
           </SelectContent>
         </Select>
+        
+        <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="Filtrar por tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los tipos</SelectItem>
+            <SelectItem value="nuevo_ingreso">Nuevos Ingresos</SelectItem>
+            <SelectItem value="movimiento_interno">Movimientos Internos</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Probation Periods Table */}
@@ -242,6 +259,7 @@ export function ProbationPage() {
               <TableRow>
                 <TableHead>Empleado</TableHead>
                 <TableHead>Cargo</TableHead>
+                <TableHead>Tipo</TableHead>
                 <TableHead>Período</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Tiempo Restante</TableHead>
@@ -267,6 +285,11 @@ export function ProbationPage() {
                         {probationPeriod.employee.cargo.departamento.name}
                       </div>
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={probationPeriod.type === "nuevo_ingreso" ? "default" : "secondary"}>
+                      {probationPeriod.type === "nuevo_ingreso" ? "Nuevo Ingreso" : "Movimiento Interno"}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
@@ -322,7 +345,7 @@ export function ProbationPage() {
           
           {filteredProbationPeriods.length === 0 && (
             <div className="text-center py-8 text-muted-foreground">
-              {searchTerm || statusFilter !== "all" 
+              {searchTerm || statusFilter !== "all" || typeFilter !== "all"
                 ? "No se encontraron períodos de prueba con los filtros aplicados." 
                 : "No hay períodos de prueba registrados."
               }

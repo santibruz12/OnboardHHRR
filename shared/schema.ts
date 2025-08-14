@@ -90,9 +90,15 @@ const probationStatusEnum = pgEnum("probation_status", [
   "terminado"
 ]);
 
+const probationTypeEnum = pgEnum("probation_type", [
+  "nuevo_ingreso",
+  "movimiento_interno"
+]);
+
 export const probationPeriods = pgTable("probation_periods", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id),
+  type: probationTypeEnum("type").notNull().default("nuevo_ingreso"),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
   status: probationStatusEnum("status").notNull().default("activo"),

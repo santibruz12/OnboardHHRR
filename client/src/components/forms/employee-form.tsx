@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import React from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,28 +35,62 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
     reset
   } = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeFormSchema),
-    defaultValues: employee ? {
-      fullName: employee.fullName,
-      cedula: employee.user.cedula,
-      email: employee.email,
-      phone: employee.phone || "",
-      birthDate: employee.birthDate || "",
-      gerenciaId: employee.cargo.departamento.gerenciaId,
-      departamentoId: employee.cargo.departamentoId,
-      cargoId: employee.cargoId,
-      supervisorId: employee.supervisorId || "",
-      startDate: employee.startDate,
-      status: employee.status,
-      role: employee.user.role,
-      contractType: employee.contract?.type || "indefinido",
-      generateProbation: false
-    } : {
-      contractType: "indefinido",
-      role: "empleado",
+    defaultValues: {
+      fullName: "",
+      cedula: "",
+      email: "",
+      phone: "",
+      birthDate: "",
+      gerenciaId: "",
+      departamentoId: "",
+      cargoId: "",
+      supervisorId: "",
+      startDate: "",
       status: "activo",
+      role: "empleado",
+      contractType: "indefinido",
       generateProbation: false
     }
   });
+
+  // Pre-cargar datos cuando se está editando
+  React.useEffect(() => {
+    if (employee && isOpen) {
+      reset({
+        fullName: employee.fullName,
+        cedula: employee.user.cedula,
+        email: employee.email,
+        phone: employee.phone || "",
+        birthDate: employee.birthDate || "",
+        gerenciaId: employee.cargo.departamento.gerenciaId,
+        departamentoId: employee.cargo.departamentoId,
+        cargoId: employee.cargoId,
+        supervisorId: employee.supervisorId || "",
+        startDate: employee.startDate,
+        status: employee.status,
+        role: employee.user.role,
+        contractType: employee.contract?.type || "indefinido",
+        generateProbation: false
+      });
+    } else if (!employee && isOpen) {
+      reset({
+        fullName: "",
+        cedula: "",
+        email: "",
+        phone: "",
+        birthDate: "",
+        gerenciaId: "",
+        departamentoId: "",
+        cargoId: "",
+        supervisorId: "",
+        startDate: "",
+        status: "activo",
+        role: "empleado",
+        contractType: "indefinido",
+        generateProbation: false
+      });
+    }
+  }, [employee, isOpen, reset]);
 
   const watchedValues = watch();
 

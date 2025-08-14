@@ -109,23 +109,35 @@ export default function EgresosPage() {
       const response = await fetch("/api/egresos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
+        credentials: "include",
+        body: JSON.stringify({
+          ...data,
+          status: "solicitado",
+          solicitadoPor: user?.id
+        })
       });
-      if (!response.ok) throw new Error("Error al crear egreso");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Error al crear egreso");
+      }
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/egresos"] });
       setIsCreateDialogOpen(false);
       form.reset();
+    },
+    onError: (error: any) => {
+      console.error("Error creating egreso:", error);
     }
   });
 
   const updateEgresoMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<any> }) => {
       const response = await fetch(`/api/egresos/${id}`, {
-        method: "PATCH",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(data)
       });
       if (!response.ok) throw new Error("Error al actualizar egreso");

@@ -12,6 +12,10 @@ import Employees from "@/pages/employees";
 import Contracts from "@/pages/contracts";
 import { CandidatesPage } from "@/pages/candidates";
 import { ProbationPage } from "@/pages/probation";
+import EgresosPage from "@/pages/egresos";
+import JobOffersPage from "@/pages/job-offers";
+import RolesPage from "@/pages/roles";
+import ReportsPage from "@/pages/reports";
 import NotFound from "@/pages/not-found";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -64,6 +68,30 @@ function Router() {
       <Route path="/probation">
         <ProtectedRoute>
           <ProbationPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/egresos">
+        <ProtectedRoute>
+          <EgresosPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/job-offers">
+        <ProtectedRoute>
+          <JobOffersPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/roles">
+        <ProtectedRoute>
+          <RolesPage />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/reports">
+        <ProtectedRoute>
+          <ReportsPage />
         </ProtectedRoute>
       </Route>
 

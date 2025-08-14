@@ -87,10 +87,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           active: location.startsWith("/probation")
         },
         { 
-          path: "/exits", 
+          path: "/egresos", 
           label: "Egresos", 
           icon: DoorOpen,
-          active: location.startsWith("/exits")
+          active: location.startsWith("/egresos")
         }
       ]
     },
@@ -104,10 +104,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           active: location.startsWith("/candidates")
         },
         { 
-          path: "/jobs", 
+          path: "/job-offers", 
           label: "Ofertas de Trabajo", 
           icon: Briefcase,
-          active: location.startsWith("/jobs")
+          active: location.startsWith("/job-offers")
         }
       ]
     },

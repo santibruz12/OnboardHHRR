@@ -15,11 +15,20 @@ import {
   type CandidateWithRelations,
   type ProbationPeriod,
   type ProbationPeriodWithRelations,
+  type Egreso,
+  type EgresoWithRelations,
+  type JobOffer,
+  type JobOfferWithRelations,
+  type JobApplication,
+  type JobApplicationWithRelations,
   type EmployeeWithRelations,
   type DashboardStats,
   type LoginData,
   insertCandidateSchema,
-  insertProbationPeriodSchema
+  insertProbationPeriodSchema,
+  insertEgresoSchema,
+  insertJobOfferSchema,
+  insertJobApplicationSchema
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
@@ -74,6 +83,30 @@ export interface IStorage {
   deleteProbationPeriod(id: string): Promise<boolean>;
   getExpiringProbationPeriods(): Promise<ProbationPeriodWithRelations[]>;
 
+  // Egresos
+  getEgresos(): Promise<EgresoWithRelations[]>;
+  getEgreso(id: string): Promise<EgresoWithRelations | undefined>;
+  getEgresosByEmployee(employeeId: string): Promise<EgresoWithRelations[]>;
+  createEgreso(egreso: Omit<Egreso, 'id' | 'createdAt' | 'updatedAt'>): Promise<Egreso>;
+  updateEgreso(id: string, egreso: Partial<Egreso>): Promise<Egreso | undefined>;
+  deleteEgreso(id: string): Promise<boolean>;
+
+  // Job Offers
+  getJobOffers(): Promise<JobOfferWithRelations[]>;
+  getJobOffer(id: string): Promise<JobOfferWithRelations | undefined>;
+  createJobOffer(jobOffer: Omit<JobOffer, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobOffer>;
+  updateJobOffer(id: string, jobOffer: Partial<JobOffer>): Promise<JobOffer | undefined>;
+  deleteJobOffer(id: string): Promise<boolean>;
+
+  // Job Applications
+  getJobApplications(): Promise<JobApplicationWithRelations[]>;
+  getJobApplication(id: string): Promise<JobApplicationWithRelations | undefined>;
+  getJobApplicationsByOffer(jobOfferId: string): Promise<JobApplicationWithRelations[]>;
+  getJobApplicationsByCandidate(candidateId: string): Promise<JobApplicationWithRelations[]>;
+  createJobApplication(application: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobApplication>;
+  updateJobApplication(id: string, application: Partial<JobApplication>): Promise<JobApplication | undefined>;
+  deleteJobApplication(id: string): Promise<boolean>;
+
   // Dashboard
   getDashboardStats(): Promise<DashboardStats>;
 }
@@ -87,6 +120,9 @@ export class MemStorage implements IStorage {
   private contracts: Map<string, Contract> = new Map();
   private candidates: Map<string, Candidate> = new Map();
   private probationPeriods: Map<string, ProbationPeriod> = new Map();
+  private egresos: Map<string, Egreso> = new Map();
+  private jobOffers: Map<string, JobOffer> = new Map();
+  private jobApplications: Map<string, JobApplication> = new Map();
 
   constructor() {
     this.initializeData();
@@ -734,6 +770,274 @@ export class MemStorage implements IStorage {
       activeProbationPeriods,
       expiringProbationPeriods
     };
+  }
+
+  // Egresos methods
+  async getEgresos(): Promise<EgresoWithRelations[]> {
+    const allEgresos: EgresoWithRelations[] = [];
+    
+    for (const egreso of this.egresos.values()) {
+      const employee = await this.getEmployee(egreso.employeeId);
+      const solicitadoPorUser = await this.getUser(egreso.solicitadoPor);
+      const aprobadoPorUser = egreso.aprobadoPor ? await this.getUser(egreso.aprobadoPor) : undefined;
+      
+      if (employee && solicitadoPorUser) {
+        allEgresos.push({
+          ...egreso,
+          employee,
+          solicitadoPorUser,
+          aprobadoPorUser
+        });
+      }
+    }
+    
+    return allEgresos;
+  }
+
+  async getEgreso(id: string): Promise<EgresoWithRelations | undefined> {
+    const egreso = this.egresos.get(id);
+    if (!egreso) return undefined;
+    
+    const employee = await this.getEmployee(egreso.employeeId);
+    const solicitadoPorUser = await this.getUser(egreso.solicitadoPor);
+    const aprobadoPorUser = egreso.aprobadoPor ? await this.getUser(egreso.aprobadoPor) : undefined;
+    
+    if (!employee || !solicitadoPorUser) return undefined;
+    
+    return {
+      ...egreso,
+      employee,
+      solicitadoPorUser,
+      aprobadoPorUser
+    };
+  }
+
+  async getEgresosByEmployee(employeeId: string): Promise<EgresoWithRelations[]> {
+    const allEgresos = await this.getEgresos();
+    return allEgresos.filter(egreso => egreso.employeeId === employeeId);
+  }
+
+  async createEgreso(egresoData: Omit<Egreso, 'id' | 'createdAt' | 'updatedAt'>): Promise<Egreso> {
+    const id = randomUUID();
+    const now = new Date().toISOString() as any;
+    const egreso: Egreso = {
+      id,
+      ...egresoData,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.egresos.set(id, egreso);
+    return egreso;
+  }
+
+  async updateEgreso(id: string, updates: Partial<Egreso>): Promise<Egreso | undefined> {
+    const egreso = this.egresos.get(id);
+    if (!egreso) return undefined;
+    
+    const updatedEgreso: Egreso = {
+      ...egreso,
+      ...updates,
+      id: egreso.id,
+      createdAt: egreso.createdAt,
+      updatedAt: new Date().toISOString() as any
+    };
+    this.egresos.set(id, updatedEgreso);
+    return updatedEgreso;
+  }
+
+  async deleteEgreso(id: string): Promise<boolean> {
+    return this.egresos.delete(id);
+  }
+
+  // Job Offers methods
+  async getJobOffers(): Promise<JobOfferWithRelations[]> {
+    const allJobOffers: JobOfferWithRelations[] = [];
+    
+    for (const jobOffer of this.jobOffers.values()) {
+      const cargo = this.cargos.get(jobOffer.cargoId);
+      const creadoPorUser = await this.getUser(jobOffer.creadoPor);
+      const supervisorAsignadoUser = jobOffer.supervisorAsignado ? await this.getUser(jobOffer.supervisorAsignado) : undefined;
+      
+      if (cargo && creadoPorUser) {
+        const departamento = this.departamentos.get(cargo.departamentoId);
+        if (departamento) {
+          const gerencia = this.gerencias.get(departamento.gerenciaId);
+          if (gerencia) {
+            // Calculate applications count
+            const applicationsCount = Array.from(this.jobApplications.values())
+              .filter(app => app.jobOfferId === jobOffer.id).length;
+
+            allJobOffers.push({
+              ...jobOffer,
+              cargo: {
+                ...cargo,
+                departamento: {
+                  ...departamento,
+                  gerencia
+                }
+              },
+              creadoPorUser,
+              supervisorAsignadoUser,
+              applicationsCount
+            });
+          }
+        }
+      }
+    }
+    
+    return allJobOffers;
+  }
+
+  async getJobOffer(id: string): Promise<JobOfferWithRelations | undefined> {
+    const jobOffer = this.jobOffers.get(id);
+    if (!jobOffer) return undefined;
+    
+    const cargo = this.cargos.get(jobOffer.cargoId);
+    const creadoPorUser = await this.getUser(jobOffer.creadoPor);
+    const supervisorAsignadoUser = jobOffer.supervisorAsignado ? await this.getUser(jobOffer.supervisorAsignado) : undefined;
+    
+    if (!cargo || !creadoPorUser) return undefined;
+    
+    const departamento = this.departamentos.get(cargo.departamentoId);
+    if (!departamento) return undefined;
+    
+    const gerencia = this.gerencias.get(departamento.gerenciaId);
+    if (!gerencia) return undefined;
+    
+    const applicationsCount = Array.from(this.jobApplications.values())
+      .filter(app => app.jobOfferId === jobOffer.id).length;
+    
+    return {
+      ...jobOffer,
+      cargo: {
+        ...cargo,
+        departamento: {
+          ...departamento,
+          gerencia
+        }
+      },
+      creadoPorUser,
+      supervisorAsignadoUser,
+      applicationsCount
+    };
+  }
+
+  async createJobOffer(jobOfferData: Omit<JobOffer, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobOffer> {
+    const id = randomUUID();
+    const now = new Date().toISOString() as any;
+    const jobOffer: JobOffer = {
+      id,
+      ...jobOfferData,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.jobOffers.set(id, jobOffer);
+    return jobOffer;
+  }
+
+  async updateJobOffer(id: string, updates: Partial<JobOffer>): Promise<JobOffer | undefined> {
+    const jobOffer = this.jobOffers.get(id);
+    if (!jobOffer) return undefined;
+    
+    const updatedJobOffer: JobOffer = {
+      ...jobOffer,
+      ...updates,
+      id: jobOffer.id,
+      createdAt: jobOffer.createdAt,
+      updatedAt: new Date().toISOString() as any
+    };
+    this.jobOffers.set(id, updatedJobOffer);
+    return updatedJobOffer;
+  }
+
+  async deleteJobOffer(id: string): Promise<boolean> {
+    return this.jobOffers.delete(id);
+  }
+
+  // Job Applications methods
+  async getJobApplications(): Promise<JobApplicationWithRelations[]> {
+    const allApplications: JobApplicationWithRelations[] = [];
+    
+    for (const application of this.jobApplications.values()) {
+      const jobOffer = await this.getJobOffer(application.jobOfferId);
+      const candidate = this.candidates.get(application.candidateId);
+      const entrevistadoPorUser = application.entrevistadoPor ? await this.getUser(application.entrevistadoPor) : undefined;
+      const evaluadoPorUser = application.evaluadoPor ? await this.getUser(application.evaluadoPor) : undefined;
+      
+      if (jobOffer && candidate) {
+        allApplications.push({
+          ...application,
+          jobOffer,
+          candidate,
+          entrevistadoPorUser,
+          evaluadoPorUser
+        });
+      }
+    }
+    
+    return allApplications;
+  }
+
+  async getJobApplication(id: string): Promise<JobApplicationWithRelations | undefined> {
+    const application = this.jobApplications.get(id);
+    if (!application) return undefined;
+    
+    const jobOffer = await this.getJobOffer(application.jobOfferId);
+    const candidate = this.candidates.get(application.candidateId);
+    const entrevistadoPorUser = application.entrevistadoPor ? await this.getUser(application.entrevistadoPor) : undefined;
+    const evaluadoPorUser = application.evaluadoPor ? await this.getUser(application.evaluadoPor) : undefined;
+    
+    if (!jobOffer || !candidate) return undefined;
+    
+    return {
+      ...application,
+      jobOffer,
+      candidate,
+      entrevistadoPorUser,
+      evaluadoPorUser
+    };
+  }
+
+  async getJobApplicationsByOffer(jobOfferId: string): Promise<JobApplicationWithRelations[]> {
+    const allApplications = await this.getJobApplications();
+    return allApplications.filter(app => app.jobOfferId === jobOfferId);
+  }
+
+  async getJobApplicationsByCandidate(candidateId: string): Promise<JobApplicationWithRelations[]> {
+    const allApplications = await this.getJobApplications();
+    return allApplications.filter(app => app.candidateId === candidateId);
+  }
+
+  async createJobApplication(applicationData: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobApplication> {
+    const id = randomUUID();
+    const now = new Date().toISOString() as any;
+    const application: JobApplication = {
+      id,
+      ...applicationData,
+      createdAt: now,
+      updatedAt: now
+    };
+    this.jobApplications.set(id, application);
+    return application;
+  }
+
+  async updateJobApplication(id: string, updates: Partial<JobApplication>): Promise<JobApplication | undefined> {
+    const application = this.jobApplications.get(id);
+    if (!application) return undefined;
+    
+    const updatedApplication: JobApplication = {
+      ...application,
+      ...updates,
+      id: application.id,
+      createdAt: application.createdAt,
+      updatedAt: new Date().toISOString() as any
+    };
+    this.jobApplications.set(id, updatedApplication);
+    return updatedApplication;
+  }
+
+  async deleteJobApplication(id: string): Promise<boolean> {
+    return this.jobApplications.delete(id);
   }
 }
 

@@ -8,6 +8,37 @@ OnBoard HHRR is a comprehensive Human Resources management application designed 
 
 Preferred communication style: Simple, everyday language.
 
+## PENDIENTES DE IMPLEMENTAR PRIORITARIOS
+
+### 1. ✅ Módulo de Egresos - Problema de Scroll en Modal [RESUELTO]
+**Descripción**: La ventana emergente (modal) para registrar un nuevo egreso no permite hacer scroll correctamente, lo que impide acceder a todos los campos del formulario cuando el contenido excede la altura visible de la ventana.
+
+**Solución implementada**: 
+- Agregado `max-h-[90vh] overflow-y-auto` al DialogContent
+- Envuelto el formulario en un contenedor con scroll: `overflow-y-auto max-h-[calc(90vh-120px)]`
+- Agregado borde superior a los botones de acción para mejor separación visual
+- Los usuarios ahora pueden hacer scroll en formularios largos sin perder acceso a los campos
+
+**Ubicación**: `client/src/pages/egresos.tsx` - Dialog component para crear nuevo egreso
+
+### 2. Módulo de Candidatos - Formularios Incompletos
+**Descripción**: El módulo de candidatos carece de implementación completa de formularios. Aunque la estructura básica existe, faltan formularios funcionales para la gestión completa de candidatos.
+
+**Impacto**: Funcionalidad limitada para la gestión de candidatos, impidiendo un flujo completo de reclutamiento.
+
+**Ubicación**: `client/src/pages/candidates.tsx` - Requiere implementación de formularios de creación/edición
+
+### 3. Sistema de Filtros en Reportes - Justificación de Funcionalidad
+**Descripción**: Se implementaron filtros en el módulo de reportes (por departamento y estado) pero se cuestiona la necesidad y utilidad de esta funcionalidad.
+
+**Justificación técnica**: Los filtros permiten:
+- Generar reportes específicos por departamento para análisis segmentado
+- Filtrar empleados por estado (activo, inactivo, período de prueba) para reportes focalizados
+- Mejorar el rendimiento al reducir el conjunto de datos procesados
+- Facilitar análisis de RRHH por áreas específicas de la organización
+
+**Ubicación**: `client/src/pages/reports.tsx` - Componentes Select para departmentFilter y statusFilter
+
 ## Recent Changes
 
 - ✅ Migración completa de Replit Agent a Replit (Enero 2025)
@@ -19,6 +50,10 @@ Preferred communication style: Simple, everyday language.
 - ✅ Workflow de desarrollo configurado y operativo en Replit
 - ✅ Implementado Módulo de Reclutamiento completo con gestión de candidatos (Enero 2025)
 - ✅ Implementado Módulo de Períodos de Prueba completo con seguimiento y evaluaciones (Enero 2025)
+- ✅ Implementado Módulo de Egresos completo con aprobaciones y seguimiento de salidas (Enero 2025)
+- ✅ Implementado Módulo de Ofertas de Trabajo con seguimiento de aplicaciones (Enero 2025)
+- ✅ Implementado Módulo de Gestión de Roles y Permisos jerarquizado (Enero 2025)
+- ✅ Implementado Sistema de Reportes con múltiples tipos de análisis (Enero 2025)
 
 ## System Architecture
 
@@ -58,6 +93,10 @@ Preferred communication style: Simple, everyday language.
 - **User System**: Separate user accounts linked to employee records for authentication
 - **Recruitment Module**: Complete candidate lifecycle management with evaluation tracking
 - **Probation Periods**: Comprehensive probation period management with status tracking and evaluations
+- **Departures Module**: Complete employee departure management with approvals and documentation tracking
+- **Job Offers Module**: Job posting system with application tracking and candidate management
+- **Role Management**: Hierarchical role system with permission management and user administration
+- **Reports System**: Comprehensive reporting system with multiple analysis types and data export capabilities
 - **Dashboard Analytics**: Aggregated statistics for HR insights and reporting across all modules
 
 ## External Dependencies

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, insertEmployeeSchema, insertUserSchema, insertContractSchema, insertCandidateSchema, insertProbationPeriodSchema } from "@shared/schema";
+import { loginSchema, insertEmployeeSchema, insertUserSchema, insertContractSchema, insertCandidateSchema, insertProbationPeriodSchema, insertEgresoSchema, insertJobOfferSchema, insertJobApplicationSchema } from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -425,9 +425,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         notes: req.body.notes,
         status: req.body.status || "en_evaluacion",
         submittedBy: (req as any).user.id,
-        evaluatedBy: req.body.evaluatedBy,
-        evaluationNotes: req.body.evaluationNotes,
-        evaluationDate: req.body.evaluationDate
+        evaluatedBy: req.body.evaluatedBy || null,
+        evaluationNotes: req.body.evaluationNotes || null,
+        evaluationDate: req.body.evaluationDate || null
       });
 
       if (!validation.success) {
@@ -529,7 +529,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("[CREATE_PROBATION_PERIOD_REQUEST]", JSON.stringify(req.body, null, 2));
       
-      const validation = insertProbationPeriodSchema.safeParse(req.body);
+      const validation = insertProbationPeriodSchema.safeParse({
+        ...req.body,
+        status: req.body.status || "activo",
+        evaluatedBy: req.body.evaluatedBy || null,
+        evaluationNotes: req.body.evaluationNotes || null,
+        evaluationDate: req.body.evaluationDate || null,
+        extensionReason: req.body.extensionReason || null,
+        approved: req.body.approved !== undefined ? req.body.approved : null
+      });
       if (!validation.success) {
         console.log("[PROBATION_PERIOD_VALIDATION_ERROR]", validation.error.errors);
         return res.status(400).json({ 
@@ -578,6 +586,242 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[DELETE_PROBATION_PERIOD_ERROR]", error);
       res.status(500).json({ error: "Error al eliminar período de prueba" });
+    }
+  });
+
+  // Egresos routes
+  app.get("/api/egresos", requireAuth, async (req, res) => {
+    try {
+      const egresos = await storage.getEgresos();
+      res.json(egresos);
+    } catch (error) {
+      console.error("[GET_EGRESOS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener egresos" });
+    }
+  });
+
+  app.get("/api/egresos/:id", requireAuth, async (req, res) => {
+    try {
+      const egreso = await storage.getEgreso(req.params.id);
+      if (!egreso) {
+        return res.status(404).json({ error: "Egreso no encontrado" });
+      }
+      res.json(egreso);
+    } catch (error) {
+      console.error("[GET_EGRESO_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener egreso" });
+    }
+  });
+
+  app.post("/api/egresos", requireAuth, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user || !user.id) {
+        return res.status(401).json({ error: "Usuario no autenticado" });
+      }
+
+      const validation = insertEgresoSchema.safeParse({
+        ...req.body,
+        status: req.body.status || "solicitado",
+        solicitadoPor: user.id,
+        aprobadoPor: req.body.aprobadoPor || null,
+        fechaAprobacion: req.body.fechaAprobacion || null,
+        fechaEfectiva: req.body.fechaEfectiva || null,
+        motivoRechazo: req.body.motivoRechazo || null,
+        observaciones: req.body.observaciones || null,
+        documentosEntregados: req.body.documentosEntregados || null,
+        activosEntregados: req.body.activosEntregados || null,
+        liquidacionCalculada: req.body.liquidacionCalculada || null
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Datos de egreso inválidos", 
+          details: validation.error.errors 
+        });
+      }
+
+      const egreso = await storage.createEgreso(validation.data);
+      const fullEgreso = await storage.getEgreso(egreso.id);
+      res.status(201).json({ success: true, egreso: fullEgreso });
+    } catch (error) {
+      console.error("[CREATE_EGRESO_ERROR]", error);
+      res.status(500).json({ error: "Error al crear egreso" });
+    }
+  });
+
+  app.patch("/api/egresos/:id", requireAuth, async (req, res) => {
+    try {
+      const validation = insertEgresoSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Datos inválidos", 
+          details: validation.error.errors 
+        });
+      }
+
+      const egreso = await storage.updateEgreso(req.params.id, validation.data);
+      if (!egreso) {
+        return res.status(404).json({ error: "Egreso no encontrado" });
+      }
+      res.json({ success: true, egreso });
+    } catch (error) {
+      console.error("[UPDATE_EGRESO_ERROR]", error);
+      res.status(500).json({ error: "Error al actualizar egreso" });
+    }
+  });
+
+  // Job Offers routes
+  app.get("/api/job-offers", requireAuth, async (req, res) => {
+    try {
+      const jobOffers = await storage.getJobOffers();
+      res.json(jobOffers);
+    } catch (error) {
+      console.error("[GET_JOB_OFFERS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener ofertas de trabajo" });
+    }
+  });
+
+  app.get("/api/job-offers/:id", requireAuth, async (req, res) => {
+    try {
+      const jobOffer = await storage.getJobOffer(req.params.id);
+      if (!jobOffer) {
+        return res.status(404).json({ error: "Oferta de trabajo no encontrada" });
+      }
+      res.json(jobOffer);
+    } catch (error) {
+      console.error("[GET_JOB_OFFER_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener oferta de trabajo" });
+    }
+  });
+
+  app.post("/api/job-offers", requireAuth, async (req, res) => {
+    try {
+      const user = (req as any).user;
+      if (!user || !user.id) {
+        return res.status(401).json({ error: "Usuario no autenticado" });
+      }
+
+      const validation = insertJobOfferSchema.safeParse({
+        ...req.body,
+        status: req.body.status || "borrador",
+        creadoPor: user.id,
+        experienciaRequerida: req.body.experienciaRequerida || null,
+        educacionRequerida: req.body.educacionRequerida || null,
+        habilidadesRequeridas: req.body.habilidadesRequeridas || null,
+        modalidadTrabajo: req.body.modalidadTrabajo || null,
+        ubicacion: req.body.ubicacion || null,
+        fechaInicioPublicacion: req.body.fechaInicioPublicacion || null,
+        fechaCierrePublicacion: req.body.fechaCierrePublicacion || null,
+        supervisorAsignado: req.body.supervisorAsignado || null,
+        notas: req.body.notas || null
+      });
+
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Datos de oferta inválidos", 
+          details: validation.error.errors 
+        });
+      }
+
+      const jobOffer = await storage.createJobOffer(validation.data);
+      const fullJobOffer = await storage.getJobOffer(jobOffer.id);
+      res.status(201).json({ success: true, jobOffer: fullJobOffer });
+    } catch (error) {
+      console.error("[CREATE_JOB_OFFER_ERROR]", error);
+      res.status(500).json({ error: "Error al crear oferta de trabajo" });
+    }
+  });
+
+  app.patch("/api/job-offers/:id", requireAuth, async (req, res) => {
+    try {
+      const validation = insertJobOfferSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Datos inválidos", 
+          details: validation.error.errors 
+        });
+      }
+
+      const jobOffer = await storage.updateJobOffer(req.params.id, validation.data);
+      if (!jobOffer) {
+        return res.status(404).json({ error: "Oferta de trabajo no encontrada" });
+      }
+      res.json({ success: true, jobOffer });
+    } catch (error) {
+      console.error("[UPDATE_JOB_OFFER_ERROR]", error);
+      res.status(500).json({ error: "Error al actualizar oferta de trabajo" });
+    }
+  });
+
+  // Job Applications routes
+  app.get("/api/job-applications", requireAuth, async (req, res) => {
+    try {
+      const applications = await storage.getJobApplications();
+      res.json(applications);
+    } catch (error) {
+      console.error("[GET_JOB_APPLICATIONS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener aplicaciones" });
+    }
+  });
+
+  app.get("/api/job-offers/:jobOfferId/applications", requireAuth, async (req, res) => {
+    try {
+      const applications = await storage.getJobApplicationsByOffer(req.params.jobOfferId);
+      res.json(applications);
+    } catch (error) {
+      console.error("[GET_JOB_OFFER_APPLICATIONS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener aplicaciones de la oferta" });
+    }
+  });
+
+  app.post("/api/job-applications", requireAuth, async (req, res) => {
+    try {
+      const validation = insertJobApplicationSchema.safeParse({
+        ...req.body,
+        status: req.body.status || "aplicado",
+        fechaAplicacion: req.body.fechaAplicacion || new Date().toISOString(),
+        fechaEntrevista: req.body.fechaEntrevista || null,
+        entrevistadoPor: req.body.entrevistadoPor || null,
+        notasEntrevista: req.body.notasEntrevista || null,
+        evaluadoPor: req.body.evaluadoPor || null,
+        notasEvaluacion: req.body.notasEvaluacion || null,
+        fechaEvaluacion: req.body.fechaEvaluacion || null
+      });
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Datos de aplicación inválidos", 
+          details: validation.error.errors 
+        });
+      }
+
+      const application = await storage.createJobApplication(validation.data);
+      const fullApplication = await storage.getJobApplication(application.id);
+      res.status(201).json({ success: true, application: fullApplication });
+    } catch (error) {
+      console.error("[CREATE_JOB_APPLICATION_ERROR]", error);
+      res.status(500).json({ error: "Error al crear aplicación" });
+    }
+  });
+
+  app.patch("/api/job-applications/:id", requireAuth, async (req, res) => {
+    try {
+      const validation = insertJobApplicationSchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          error: "Datos inválidos", 
+          details: validation.error.errors 
+        });
+      }
+
+      const application = await storage.updateJobApplication(req.params.id, validation.data);
+      if (!application) {
+        return res.status(404).json({ error: "Aplicación no encontrada" });
+      }
+      res.json({ success: true, application });
+    } catch (error) {
+      console.error("[UPDATE_JOB_APPLICATION_ERROR]", error);
+      res.status(500).json({ error: "Error al actualizar aplicación" });
     }
   });
 

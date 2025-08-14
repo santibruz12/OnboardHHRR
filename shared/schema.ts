@@ -136,6 +136,120 @@ export const candidates = pgTable("candidates", {
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
+// Egresos (Employee Departures)
+export const egresoStatusEnum = pgEnum("egreso_status", [
+  "solicitado",
+  "en_revision",
+  "aprobado",
+  "rechazado",
+  "procesado",
+  "cancelado"
+]);
+
+export const egresoMotivoEnum = pgEnum("egreso_motivo", [
+  "renuncia_voluntaria",
+  "despido_causa_justificada",
+  "despido_sin_causa",
+  "jubilacion",
+  "vencimiento_contrato",
+  "periodo_prueba_no_superado",
+  "reestructuracion",
+  "abandono_trabajo",
+  "incapacidad_permanente",
+  "fallecimiento"
+]);
+
+export const egresos = pgTable("egresos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull().references(() => employees.id),
+  motivo: egresoMotivoEnum("motivo").notNull(),
+  fechaSolicitud: date("fecha_solicitud").notNull(),
+  fechaEfectiva: date("fecha_efectiva"),
+  solicitadoPor: varchar("solicitado_por").notNull().references(() => users.id),
+  aprobadoPor: varchar("aprobado_por").references(() => users.id),
+  observaciones: text("observaciones"),
+  documentosEntregados: text("documentos_entregados"),
+  activosEntregados: text("activos_entregados"),
+  liquidacionCalculada: text("liquidacion_calculada"),
+  status: egresoStatusEnum("status").notNull().default("solicitado"),
+  motivoRechazo: text("motivo_rechazo"),
+  fechaAprobacion: timestamp("fecha_aprobacion"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+// Job Offers (Ofertas de Trabajo)
+export const jobOfferStatusEnum = pgEnum("job_offer_status", [
+  "borrador",
+  "publicada",
+  "pausada",
+  "cerrada",
+  "cancelada"
+]);
+
+export const jobOfferPriorityEnum = pgEnum("job_offer_priority", [
+  "baja",
+  "media",
+  "alta",
+  "urgente"
+]);
+
+export const jobOffers = pgTable("job_offers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  titulo: varchar("titulo", { length: 200 }).notNull(),
+  descripcion: text("descripcion").notNull(),
+  cargoId: varchar("cargo_id").notNull().references(() => cargos.id),
+  experienciaRequerida: text("experiencia_requerida"),
+  educacionRequerida: text("educacion_requerida"),
+  habilidadesRequeridas: text("habilidades_requeridas"),
+  salarioMinimo: integer("salario_minimo"),
+  salarioMaximo: integer("salario_maximo"),
+  tipoContrato: contractTypeEnum("tipo_contrato").notNull(),
+  modalidadTrabajo: varchar("modalidad_trabajo", { length: 50 }), // presencial, remoto, hibrido
+  ubicacion: varchar("ubicacion", { length: 100 }),
+  fechaInicioPublicacion: date("fecha_inicio_publicacion"),
+  fechaCierrePublicacion: date("fecha_cierre_publicacion"),
+  vacantesDisponibles: integer("vacantes_disponibles").notNull().default(1),
+  status: jobOfferStatusEnum("status").notNull().default("borrador"),
+  prioridad: jobOfferPriorityEnum("prioridad").notNull().default("media"),
+  creadoPor: varchar("creado_por").notNull().references(() => users.id),
+  supervisorAsignado: varchar("supervisor_asignado").references(() => users.id),
+  notas: text("notas"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+// Job Applications (Aplicaciones a Ofertas)
+export const jobApplicationStatusEnum = pgEnum("job_application_status", [
+  "aplicado",
+  "en_revision",
+  "preseleccionado",
+  "entrevista_programada",
+  "entrevista_realizada",
+  "finalista",
+  "seleccionado",
+  "rechazado",
+  "retirado"
+]);
+
+export const jobApplications = pgTable("job_applications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  jobOfferId: varchar("job_offer_id").notNull().references(() => jobOffers.id),
+  candidateId: varchar("candidate_id").notNull().references(() => candidates.id),
+  fechaAplicacion: timestamp("fecha_aplicacion").notNull().defaultNow(),
+  cartaPresentacion: text("carta_presentacion"),
+  status: jobApplicationStatusEnum("status").notNull().default("aplicado"),
+  puntuacion: integer("puntuacion"), // 1-100
+  notasEntrevista: text("notas_entrevista"),
+  fechaEntrevista: timestamp("fecha_entrevista"),
+  entrevistadoPor: varchar("entrevistado_por").references(() => users.id),
+  motivoRechazo: text("motivo_rechazo"),
+  evaluadoPor: varchar("evaluado_por").references(() => users.id),
+  fechaEvaluacion: timestamp("fecha_evaluacion"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
 export const auditLogs = pgTable("audit_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
@@ -194,6 +308,24 @@ export const insertProbationPeriodSchema = createInsertSchema(probationPeriods).
   updatedAt: true
 });
 
+export const insertEgresoSchema = createInsertSchema(egresos).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertJobOfferSchema = createInsertSchema(jobOffers).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export const insertJobApplicationSchema = createInsertSchema(jobApplications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 // Login Schema
 export const loginSchema = z.object({
   cedula: z.string().regex(/^[VE]-\d{7,8}$/, "Formato de cédula inválido (V-12345678 o E-12345678)"),
@@ -208,6 +340,9 @@ export type InsertGerencia = z.infer<typeof insertGerenciaSchema>;
 export type InsertDepartamento = z.infer<typeof insertDepartamentoSchema>;
 export type InsertCargo = z.infer<typeof insertCargoSchema>;
 export type InsertProbationPeriod = z.infer<typeof insertProbationPeriodSchema>;
+export type InsertEgreso = z.infer<typeof insertEgresoSchema>;
+export type InsertJobOffer = z.infer<typeof insertJobOfferSchema>;
+export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 
 export type User = typeof users.$inferSelect;
@@ -217,6 +352,9 @@ export type Gerencia = typeof gerencias.$inferSelect;
 export type Departamento = typeof departamentos.$inferSelect;
 export type Cargo = typeof cargos.$inferSelect;
 export type ProbationPeriod = typeof probationPeriods.$inferSelect;
+export type Egreso = typeof egresos.$inferSelect;
+export type JobOffer = typeof jobOffers.$inferSelect;
+export type JobApplication = typeof jobApplications.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type Candidate = typeof candidates.$inferSelect;
 
@@ -252,6 +390,43 @@ export type ProbationPeriodWithRelations = ProbationPeriod & {
     };
   };
   evaluatedByUser?: User;
+};
+
+export type EgresoWithRelations = Egreso & {
+  employee: Employee & {
+    user: User;
+    cargo: Cargo & {
+      departamento: Departamento & {
+        gerencia: Gerencia;
+      };
+    };
+  };
+  solicitadoPorUser: User;
+  aprobadoPorUser?: User;
+};
+
+export type JobOfferWithRelations = JobOffer & {
+  cargo: Cargo & {
+    departamento: Departamento & {
+      gerencia: Gerencia;
+    };
+  };
+  creadoPorUser: User;
+  supervisorAsignadoUser?: User;
+  applicationsCount?: number;
+};
+
+export type JobApplicationWithRelations = JobApplication & {
+  jobOffer: JobOffer & {
+    cargo: Cargo & {
+      departamento: Departamento & {
+        gerencia: Gerencia;
+      };
+    };
+  };
+  candidate: Candidate;
+  entrevistadoPorUser?: User;
+  evaluadoPorUser?: User;
 };
 
 export type DashboardStats = {

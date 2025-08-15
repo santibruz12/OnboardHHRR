@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, Filter, MoreHorizontal, Mail, Phone, Users, Edit2, Eye, Trash2 } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Mail, Phone, Users, Edit2, Eye, Trash2, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SortableTableHeader } from "@/components/ui/sortable-table-header";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { EmployeeForm } from "@/components/forms/employee-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -21,6 +23,13 @@ export default function Employees() {
   const [viewingEmployee, setViewingEmployee] = useState<EmployeeWithRelations | null>(null);
   const [deleteEmployeeId, setDeleteEmployeeId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
+  const [dateTypeFilter, setDateTypeFilter] = useState("ingreso"); // ingreso o fin
+  const [periodFilter, setPeriodFilter] = useState("todos"); // este_mes, esta_semana
+  const [yearFilter, setYearFilter] = useState("todos");
+  const [monthFilter, setMonthFilter] = useState("todos");
+  const [sortBy, setSortBy] = useState("fullName");
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   
   const { toast } = useToast();
@@ -29,6 +38,19 @@ export default function Employees() {
   const { data: employees = [], isLoading } = useQuery<EmployeeWithRelations[]>({
     queryKey: ["/api/employees"]
   });
+
+  // Helper function para obtener número de semana
+  const getWeekNumber = (date: Date): number => {
+    const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+    const pastDaysOfYear = (date.getTime() - firstDayOfYear.getTime()) / 86400000;
+    return Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
+  };
+
+  // Obtener años únicos de las fechas de ingreso
+  const availableYears = useMemo(() => {
+    const years = employees.map(emp => new Date(emp.startDate).getFullYear());
+    return [...new Set(years)].sort((a, b) => b - a);
+  }, [employees]);
 
   const deleteEmployeeMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/employees/${id}`),
@@ -50,25 +72,75 @@ export default function Employees() {
   });
 
   const sortedAndFilteredEmployees = useMemo(() => {
-    let filtered = employees.filter(employee =>
-      employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.user.cedula.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    let filtered = employees.filter(employee => {
+      const searchMatch = employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.user.cedula.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.cargo?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const statusMatch = statusFilter === "todos" || employee.status === statusFilter;
+      
+      // Seleccionar fecha según el tipo de filtro
+      const referenceDate = dateTypeFilter === "ingreso" 
+        ? new Date(employee.startDate)
+        : employee.endDate 
+          ? new Date(employee.endDate)
+          : new Date(employee.startDate); // Si no hay fecha de fin, usar fecha de ingreso
+      
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth() + 1;
+      const currentWeek = getWeekNumber(currentDate);
+      const refWeek = getWeekNumber(referenceDate);
+      
+      // Filtro de período (este mes/esta semana)
+      let periodMatch = true;
+      if (periodFilter === "este_mes") {
+        periodMatch = referenceDate.getFullYear() === currentYear && referenceDate.getMonth() + 1 === currentMonth;
+      } else if (periodFilter === "esta_semana") {
+        periodMatch = referenceDate.getFullYear() === currentYear && refWeek === currentWeek;
+      }
+      
+      // Filtro de año
+      const yearMatch = yearFilter === "todos" || referenceDate.getFullYear().toString() === yearFilter;
+      
+      // Filtro de mes
+      const monthMatch = monthFilter === "todos" || (referenceDate.getMonth() + 1).toString() === monthFilter;
+      
+      return searchMatch && statusMatch && periodMatch && yearMatch && monthMatch;
+    });
 
-    if (sortConfig) {
-      filtered.sort((a, b) => {
-        const aValue = getNestedValue(a, sortConfig.key);
-        const bValue = getNestedValue(b, sortConfig.key);
-        
-        if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortBy) {
+        case 'fullName':
+          aValue = a.fullName.toLowerCase();
+          bValue = b.fullName.toLowerCase();
+          break;
+        case 'cargo':
+          aValue = a.cargo?.name?.toLowerCase() || '';
+          bValue = b.cargo?.name?.toLowerCase() || '';
+          break;
+        case 'startDate':
+          aValue = new Date(a.startDate).getTime();
+          bValue = new Date(b.startDate).getTime();
+          break;
+        default:
+          aValue = a.fullName.toLowerCase();
+          bValue = b.fullName.toLowerCase();
+      }
+      
+      if (sortOrder === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
 
     return filtered;
-  }, [employees, searchTerm, sortConfig]);
+  }, [employees, searchTerm, statusFilter, dateTypeFilter, periodFilter, yearFilter, monthFilter, sortBy, sortOrder]);
 
   const getNestedValue = (obj: any, path: string) => {
     return path.split('.').reduce((current, key) => current?.[key], obj) || '';
@@ -169,20 +241,114 @@ export default function Employees() {
         {/* Filters */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nombre, cédula o email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nombre, cédula, email o cargo..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Estado..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos los empleados</SelectItem>
+                      <SelectItem value="activo">Activo</SelectItem>
+                      <SelectItem value="periodo_prueba">Período de Prueba</SelectItem>
+                      <SelectItem value="inactivo">Inactivo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-40" data-testid="select-sort-by">
+                      <SelectValue placeholder="Ordenar por..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fullName">Nombre</SelectItem>
+                      <SelectItem value="cargo">Cargo</SelectItem>
+                      <SelectItem value="startDate">Fecha Ingreso</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={sortOrder} onValueChange={setSortOrder}>
+                    <SelectTrigger className="w-32" data-testid="select-sort-order">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="asc">↑ A-Z</SelectItem>
+                      <SelectItem value="desc">↓ Z-A</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                Filtros
-              </Button>
+              
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex gap-2 flex-1 flex-wrap">
+                  {/* Filtro 1: Tipo de fecha */}
+                  <Select value={dateTypeFilter} onValueChange={setDateTypeFilter}>
+                    <SelectTrigger className="w-36">
+                      <SelectValue placeholder="Tipo fecha..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ingreso">Fecha Ingreso</SelectItem>
+                      <SelectItem value="fin">Fecha Fin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Filtro 2: Período */}
+                  <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue placeholder="Período..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="este_mes">Este mes</SelectItem>
+                      <SelectItem value="esta_semana">Esta semana</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Filtro 3: Año */}
+                  <Select value={yearFilter} onValueChange={setYearFilter}>
+                    <SelectTrigger className="w-24">
+                      <SelectValue placeholder="Año..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {availableYears.map(year => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Filtro 4: Mes */}
+                  <Select value={monthFilter} onValueChange={setMonthFilter}>
+                    <SelectTrigger className="w-28">
+                      <SelectValue placeholder="Mes..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="1">Enero</SelectItem>
+                      <SelectItem value="2">Febrero</SelectItem>
+                      <SelectItem value="3">Marzo</SelectItem>
+                      <SelectItem value="4">Abril</SelectItem>
+                      <SelectItem value="5">Mayo</SelectItem>
+                      <SelectItem value="6">Junio</SelectItem>
+                      <SelectItem value="7">Julio</SelectItem>
+                      <SelectItem value="8">Agosto</SelectItem>
+                      <SelectItem value="9">Septiembre</SelectItem>
+                      <SelectItem value="10">Octubre</SelectItem>
+                      <SelectItem value="11">Noviembre</SelectItem>
+                      <SelectItem value="12">Diciembre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -234,7 +400,7 @@ export default function Employees() {
                       </div>
                       
                       <p className="text-sm text-muted-foreground mb-1">
-                        {employee.cargo.name} • {employee.cargo.departamento.name}
+                        {employee.cargo.name} • {employee.cargo.departamento.name} • Ingreso: {formatDate(employee.startDate)}
                       </p>
                       
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">

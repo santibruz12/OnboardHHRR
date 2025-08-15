@@ -290,32 +290,52 @@ export class PostgresStorage implements IStorage {
   }
 
   async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
-    const setClauses = [];
-    const values = [];
-    
-    if (employee.fullName !== undefined) { setClauses.push(`full_name = $${setClauses.length + 1}`); values.push(employee.fullName); }
-    if (employee.email !== undefined) { setClauses.push(`email = $${setClauses.length + 1}`); values.push(employee.email); }
-    if (employee.phone !== undefined) { setClauses.push(`phone = $${setClauses.length + 1}`); values.push(employee.phone); }
-    if (employee.birthDate !== undefined) { setClauses.push(`birth_date = $${setClauses.length + 1}`); values.push(employee.birthDate); }
-    if (employee.cargoId !== undefined) { setClauses.push(`cargo_id = $${setClauses.length + 1}`); values.push(employee.cargoId); }
-    if (employee.supervisorId !== undefined) { setClauses.push(`supervisor_id = $${setClauses.length + 1}`); values.push(employee.supervisorId); }
-    if (employee.startDate !== undefined) { setClauses.push(`start_date = $${setClauses.length + 1}`); values.push(employee.startDate); }
-    if (employee.status !== undefined) { setClauses.push(`status = $${setClauses.length + 1}`); values.push(employee.status); }
-    
-    if (setClauses.length === 0) {
+    if (Object.keys(employee).length === 0) {
       const result = await this.sql`SELECT * FROM employees WHERE id = ${id}`;
       return result[0] as Employee || undefined;
     }
     
-    setClauses.push(`updated_at = NOW()`);
-    values.push(id);
+    // Use individual conditional updates
+    let result;
     
-    const result = await this.sql`
-      UPDATE employees 
-      SET ${this.sql.unsafe(setClauses.join(', '))}
-      WHERE id = ${id}
-      RETURNING *
-    `;
+    if (employee.fullName !== undefined && employee.email !== undefined && employee.phone !== undefined) {
+      result = await this.sql`
+        UPDATE employees 
+        SET full_name = ${employee.fullName},
+            email = ${employee.email}, 
+            phone = ${employee.phone},
+            birth_date = ${employee.birthDate || null},
+            cargo_id = ${employee.cargoId || null},
+            supervisor_id = ${employee.supervisorId || null},
+            start_date = ${employee.startDate || null},
+            status = ${employee.status || 'activo'},
+            updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING *
+      `;
+    } else {
+      // For partial updates, get current data first and merge
+      const current = await this.sql`SELECT * FROM employees WHERE id = ${id}`;
+      if (!current[0]) return undefined;
+      
+      const currentEmployee = current[0] as Employee;
+      
+      result = await this.sql`
+        UPDATE employees 
+        SET full_name = ${employee.fullName ?? currentEmployee.fullName},
+            email = ${employee.email ?? currentEmployee.email}, 
+            phone = ${employee.phone ?? currentEmployee.phone},
+            birth_date = ${employee.birthDate ?? currentEmployee.birthDate},
+            cargo_id = ${employee.cargoId ?? currentEmployee.cargoId},
+            supervisor_id = ${employee.supervisorId ?? currentEmployee.supervisorId},
+            start_date = ${employee.startDate ?? currentEmployee.startDate},
+            status = ${employee.status ?? currentEmployee.status},
+            updated_at = NOW()
+        WHERE id = ${id}
+        RETURNING *
+      `;
+    }
+    
     return result[0] as Employee || undefined;
   }
 
@@ -362,8 +382,25 @@ export class PostgresStorage implements IStorage {
   }
 
   async getContracts(): Promise<Contract[]> {
-    const result = await this.sql`SELECT * FROM contracts ORDER BY created_at DESC`;
-    return result as Contract[];
+    const result = await this.sql`
+      SELECT c.*, 
+             e.full_name as employee_full_name,
+             e.email as employee_email,
+             car.name as cargo_name
+      FROM contracts c
+      LEFT JOIN employees e ON c.employee_id = e.id
+      LEFT JOIN cargos car ON e.cargo_id = car.id
+      ORDER BY c.created_at DESC
+    `;
+    return result.map((row: any) => ({
+      ...row,
+      employee: row.employee_full_name ? {
+        id: row.employee_id,
+        fullName: row.employee_full_name,
+        email: row.employee_email,
+        cargo: row.cargo_name ? { name: row.cargo_name } : null
+      } : null
+    })) as Contract[];
   }
 
   async getContract(id: string): Promise<Contract | undefined> {

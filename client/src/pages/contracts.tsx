@@ -16,7 +16,12 @@ import { formatDate, formatDateForInput } from "@/lib/date-utils";
 import type { Contract, Employee } from "@shared/schema";
 
 interface ContractWithEmployee extends Contract {
-  employee?: Employee;
+  employee?: {
+    id: string;
+    fullName: string;
+    email: string;
+    cargo?: { name: string };
+  };
 }
 
 const contractTypeLabels = {
@@ -219,7 +224,7 @@ export default function Contracts() {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const { toast } = useToast();
 
-  const { data: contracts = [], isLoading } = useQuery<Contract[]>({
+  const { data: contracts = [], isLoading } = useQuery<ContractWithEmployee[]>({
     queryKey: ["/api/contracts"]
   });
 
@@ -249,14 +254,8 @@ export default function Contracts() {
     }
   });
 
-  // Enrich contracts with employee data
-  const contractsWithEmployees: ContractWithEmployee[] = contracts.map((contract) => ({
-    ...contract,
-    employee: employees.find((emp) => emp.id === contract.employeeId)
-  }));
-
-  // Filter contracts
-  const filteredContracts = contractsWithEmployees.filter(contract => {
+  // Filter contracts - they already have employee data from the backend
+  const filteredContracts = contracts.filter(contract => {
     const matchesSearch = contract.employee?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          contractTypeLabels[contract.type].toLowerCase().includes(searchTerm.toLowerCase());
     
@@ -294,7 +293,7 @@ export default function Contracts() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight" data-testid="title-contracts">Gestión de Contratos</h1>
+          <h1 className="font-bold tracking-tight text-[25px]" data-testid="title-contracts">Gestión de Contratos</h1>
           <p className="text-muted-foreground">
             Administra los contratos laborales de tu organización
           </p>
@@ -304,7 +303,6 @@ export default function Contracts() {
           Nuevo Contrato
         </Button>
       </div>
-
       {/* Alerts for expiring contracts */}
       {expiringContracts.length > 0 && (
         <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
@@ -319,7 +317,6 @@ export default function Contracts() {
           </CardHeader>
         </Card>
       )}
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -368,7 +365,6 @@ export default function Contracts() {
           </CardContent>
         </Card>
       </div>
-
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -413,7 +409,6 @@ export default function Contracts() {
           </div>
         </CardContent>
       </Card>
-
       {/* Contracts Table */}
       <Card>
         <CardHeader>
@@ -438,8 +433,12 @@ export default function Contracts() {
               <TableBody>
                 {filteredContracts.map((contract) => (
                   <TableRow key={contract.id} data-testid={`row-contract-${contract.id}`}>
-                    <TableCell className="font-medium">
-                      {contract.employee?.fullName || "Empleado no encontrado"}
+                    <TableCell>
+                      <div className="font-medium">{contract.employee?.fullName || "Sin empleado"}</div>
+                      <div className="text-sm text-muted-foreground">{contract.employee?.email || ""}</div>
+                      {contract.employee?.cargo?.name && (
+                        <div className="text-xs text-muted-foreground">{contract.employee.cargo.name}</div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge className={contractTypeColors[contract.type]}>
@@ -497,7 +496,6 @@ export default function Contracts() {
           </div>
         </CardContent>
       </Card>
-
       {/* Create Contract Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-2xl">
@@ -510,7 +508,6 @@ export default function Contracts() {
           <ContractForm onClose={() => setShowCreateDialog(false)} />
         </DialogContent>
       </Dialog>
-
       {/* Edit Contract Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
         <DialogContent className="max-w-2xl">

@@ -26,6 +26,74 @@ export const employeeStatusEnum = pgEnum("employee_status", [
   "periodo_prueba"
 ]);
 
+export const probationStatusEnum = pgEnum("probation_status", [
+  "activo",
+  "completado", 
+  "extendido",
+  "terminado"
+]);
+
+export const probationTypeEnum = pgEnum("probation_type", [
+  "nuevo_ingreso",
+  "movimiento_interno"
+]);
+
+export const candidateStatusEnum = pgEnum("candidate_status", [
+  "en_evaluacion",
+  "aprobado", 
+  "rechazado",
+  "contratado"
+]);
+
+export const egresoStatusEnum = pgEnum("egreso_status", [
+  "solicitado",
+  "en_revision",
+  "aprobado",
+  "rechazado",
+  "procesado",
+  "cancelado"
+]);
+
+export const egresoMotivoEnum = pgEnum("egreso_motivo", [
+  "renuncia_voluntaria",
+  "despido_causa_justificada",
+  "despido_sin_causa",
+  "jubilacion",
+  "vencimiento_contrato",
+  "periodo_prueba_no_superado",
+  "reestructuracion",
+  "abandono_trabajo",
+  "incapacidad_permanente",
+  "fallecimiento"
+]);
+
+export const jobOfferStatusEnum = pgEnum("job_offer_status", [
+  "borrador",
+  "publicada",
+  "pausada",
+  "cerrada",
+  "cancelada"
+]);
+
+export const jobOfferPriorityEnum = pgEnum("job_offer_priority", [
+  "baja",
+  "media",
+  "alta",
+  "urgente"
+]);
+
+export const jobApplicationStatusEnum = pgEnum("job_application_status", [
+  "postulado",
+  "en_revision",
+  "entrevista_inicial",
+  "entrevista_tecnica",
+  "entrevista_final",
+  "oferta_extendida",
+  "aceptado",
+  "rechazado",
+  "retirado"
+]);
+
 // Core Tables
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -83,17 +151,7 @@ export const contracts = pgTable("contracts", {
   createdAt: timestamp("created_at").notNull().defaultNow()
 });
 
-const probationStatusEnum = pgEnum("probation_status", [
-  "activo",
-  "completado", 
-  "extendido",
-  "terminado"
-]);
 
-const probationTypeEnum = pgEnum("probation_type", [
-  "nuevo_ingreso",
-  "movimiento_interno"
-]);
 
 export const probationPeriods = pgTable("probation_periods", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -116,13 +174,6 @@ export const probationPeriods = pgTable("probation_periods", {
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
-export const candidateStatusEnum = pgEnum("candidate_status", [
-  "en_evaluacion",
-  "aprobado", 
-  "rechazado",
-  "contratado"
-]);
-
 export const candidates = pgTable("candidates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   cedula: varchar("cedula", { length: 12 }).notNull().unique(),
@@ -143,28 +194,6 @@ export const candidates = pgTable("candidates", {
 });
 
 // Egresos (Employee Departures)
-export const egresoStatusEnum = pgEnum("egreso_status", [
-  "solicitado",
-  "en_revision",
-  "aprobado",
-  "rechazado",
-  "procesado",
-  "cancelado"
-]);
-
-export const egresoMotivoEnum = pgEnum("egreso_motivo", [
-  "renuncia_voluntaria",
-  "despido_causa_justificada",
-  "despido_sin_causa",
-  "jubilacion",
-  "vencimiento_contrato",
-  "periodo_prueba_no_superado",
-  "reestructuracion",
-  "abandono_trabajo",
-  "incapacidad_permanente",
-  "fallecimiento"
-]);
-
 export const egresos = pgTable("egresos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id),
@@ -185,21 +214,6 @@ export const egresos = pgTable("egresos", {
 });
 
 // Job Offers (Ofertas de Trabajo)
-export const jobOfferStatusEnum = pgEnum("job_offer_status", [
-  "borrador",
-  "publicada",
-  "pausada",
-  "cerrada",
-  "cancelada"
-]);
-
-export const jobOfferPriorityEnum = pgEnum("job_offer_priority", [
-  "baja",
-  "media",
-  "alta",
-  "urgente"
-]);
-
 export const jobOffers = pgTable("job_offers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   titulo: varchar("titulo", { length: 200 }).notNull(),
@@ -226,25 +240,13 @@ export const jobOffers = pgTable("job_offers", {
 });
 
 // Job Applications (Aplicaciones a Ofertas)
-export const jobApplicationStatusEnum = pgEnum("job_application_status", [
-  "aplicado",
-  "en_revision",
-  "preseleccionado",
-  "entrevista_programada",
-  "entrevista_realizada",
-  "finalista",
-  "seleccionado",
-  "rechazado",
-  "retirado"
-]);
-
 export const jobApplications = pgTable("job_applications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   jobOfferId: varchar("job_offer_id").notNull().references(() => jobOffers.id),
   candidateId: varchar("candidate_id").notNull().references(() => candidates.id),
   fechaAplicacion: timestamp("fecha_aplicacion").notNull().defaultNow(),
   cartaPresentacion: text("carta_presentacion"),
-  status: jobApplicationStatusEnum("status").notNull().default("aplicado"),
+  status: jobApplicationStatusEnum("status").notNull().default("postulado"),
   puntuacion: integer("puntuacion"), // 1-100
   notasEntrevista: text("notas_entrevista"),
   fechaEntrevista: timestamp("fecha_entrevista"),

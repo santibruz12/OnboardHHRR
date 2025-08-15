@@ -100,6 +100,24 @@
   .fade-in {
     animation: fadeIn 0.2s ease-out;
   }
+
+  /* Estilos globales para módulos */
+  h1 {
+    font-size: 25px !important;
+  }
+
+  /* Tarjetas más pequeñas */
+  .card {
+    padding: 1rem !important;
+  }
+
+  .card .card-header {
+    padding: 1rem 1rem 0.5rem 1rem !important;
+  }
+
+  .card .card-content {
+    padding: 0.5rem 1rem 1rem 1rem !important;
+  }
 }
 
 @keyframes slideIn {

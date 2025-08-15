@@ -23,7 +23,9 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
 
   const { data: stats, isLoading } = useQuery<DashboardStats>({
-    queryKey: ["/api/dashboard/stats"]
+    queryKey: ["/api/dashboard/stats"],
+    refetchInterval: 5000, // Actualizar cada 5 segundos
+    refetchOnWindowFocus: true
   });
 
   if (isLoading) {

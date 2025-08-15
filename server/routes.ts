@@ -436,16 +436,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/contracts/expiring-soon", requireAuth, async (req, res) => {
     try {
-      const expiringContracts = await storage.getExpiringContracts();
-      res.json(expiringContracts);
-    } catch (error) {
-      console.error("[GET_EXPIRING_CONTRACTS_ERROR]", error);
-      res.status(500).json({ error: "Error al obtener contratos por vencer" });
-    }
-  });
-
-  app.get("/api/contracts/expiring-soon", requireAuth, async (req, res) => {
-    try {
       const contracts = await storage.getExpiringContracts();
       res.json(contracts);
     } catch (error) {

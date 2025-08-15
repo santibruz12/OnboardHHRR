@@ -8,26 +8,60 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [Sin liberar]
 
 ### Por agregar
-- **PRIORITARIO**: Verificación de edición en todos los módulos (pre-carga de datos y actualizaciones)
-- **PRIORITARIO**: Ordenamiento por columnas en todas las tablas con flechas clickeables
-- **PRIORITARIO**: Sincronización automática empleados-contratos (crear contrato al registrar empleado)
+- Ordenamiento por columnas en otras tablas del sistema (contratos, candidatos, etc.)
 - Completar módulo de candidatos (formularios incompletos)
-- Optimizar sistema de filtros en reportes
 - Sistema de notificaciones en tiempo real
 - Exportación de datos (Excel/PDF)
 - Gestión de vacaciones
 - Testing automatizado
 - Logs de auditoría detallados
 
-### Correcciones completadas (Enero 2025)
-- ✅ Error en actualización de candidatos (corregido: método HTTP PUT)
-- ✅ Error en actualización de períodos de prueba (corregido: PUT en lugar de PATCH)
-- ✅ Error en edición de egresos (corregido: método HTTP PUT)
-- ✅ Error en edición de ofertas de trabajo (corregido: método HTTP PUT) 
-- ✅ Error en edición de aplicaciones de trabajo (corregido: método HTTP PUT)
-- ✅ Pre-carga de datos en formulario de empleados (implementado useEffect)
-- ✅ Error de eliminación en períodos de prueba (corregido método DELETE)
-- ✅ Error de creación en egresos (corregidas validaciones y credentials)
+## [1.4.0] - 2025-01-15
+
+### Agregado
+- ✅ **Fecha de ingreso visible en tarjetas de empleados** - Mostrada junto al cargo y departamento
+- ✅ **Sistema avanzado de filtros de fecha en empleados** - Cuatro tipos de filtros:
+  - Filtro por rango personalizado (fecha de ingreso - fecha fin)
+  - Filtro por período (este mes, esta semana)
+  - Filtro por año específico
+  - Filtro por mes específico
+- ✅ **Eliminación de iconos duplicados** - Removido icono Calendar innecesario de información de empleados
+
+### Mejorado
+- **Experiencia de usuario en filtros** - Filtros de fecha más intuitivos y funcionales
+- **Visualización de información** - Fecha de ingreso integrada naturalmente en el diseño
+- **Funcionalidad de filtros independientes** - Los filtros de estado y fecha ahora funcionan correctamente de forma independiente
+
+### Técnico
+- Función `getWeekNumber()` reubicada para evitar errores de inicialización
+- Importación del icono `Calendar` agregada correctamente
+- Lógica de filtrado mejorada para manejar múltiples criterios simultáneamente
+
+## [1.3.0] - 2025-08-14 (Sesión Claude2)
+
+### Agregado
+- ✅ **Fecha en formato español completo** - "14 de agosto de 2025" reubicada en esquina superior derecha
+- ✅ **Dashboard con actualización en tiempo real** - Tarjetas se actualizan automáticamente cada 5 segundos
+- ✅ **Selector de estado en módulo empleados** - Filtro específico reemplazando botón genérico de filtros
+- ✅ **Visualización completa en contratos** - Nombres, emails y cargos de empleados visibles
+- ✅ **Búsqueda expandida** - Posibilidad de buscar empleados por cargo además de nombre, cédula y email
+- ✅ **Selector de ordenamiento en empleados** - Dos selectores para ordenar por nombre, cargo, fecha, email, cédula o estado
+- ✅ **Documentación de cambios** en `attached_assets/08 Documentacion cambios sesion claude2.md`
+
+### Corregido
+- ✅ **Error `this.sql.unsafe is not a function`** - Método updateEmployee corregido en server/storage.ts
+- ✅ **Contratos sin datos de empleado** - Query SQL mejorada con JOINs para mostrar información completa
+- ✅ **Dashboard estático** - Agregado refetchInterval y refetchOnWindowFocus
+- ✅ **UX subóptima en filtros** - Selector específico de estado implementado
+- ✅ **Rutas duplicadas eliminadas** - Limpieza en server/routes.ts
+
+### Mejoras de UX
+- Fecha contextual en español natural ubicada intuitivamente
+- Filtrado específico con selector de estado (Todos, Activo, Período de Prueba, Inactivo)
+- Datos en tiempo real sin necesidad de recargar página
+- Información completa de empleados visible en módulo de contratos
+- Búsqueda ampliada para incluir cargos
+- Ordenamiento flexible con selectores dedicados (criterio + dirección)
 
 ## [1.2.0] - 2025-08-14
 

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { CurrentDate } from "@/components/ui/current-date";
+import { CurrentDate, FormattedCurrentDate } from "@/components/ui/current-date";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
@@ -166,11 +166,13 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               {location === "/roles" && "Roles y Permisos"}
               {location === "/reports" && "Reportes"}
             </h1>
-            <CurrentDate />
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
+          <div className="text-sm text-foreground hidden sm:block">
+            <FormattedCurrentDate />
+          </div>
           <Button variant="ghost" size="sm" className="relative">
             <Bell className="h-4 w-4" />
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">

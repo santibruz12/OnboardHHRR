@@ -9,7 +9,7 @@ Sistema integral de gestión de recursos humanos diseñado específicamente para
 - ✅ **Sidebar colapsible** con navegación intuitiva
 - ✅ **Dropdowns en cascada** para estructura organizacional (Gerencia → Departamento → Cargo)
 - ✅ **Dashboard con estadísticas** en tiempo real
-- ✅ **Gestión completa de empleados** con búsqueda y filtros
+- ✅ **Gestión completa de empleados** con búsqueda avanzada, filtros de estado y fecha múltiples
 - ✅ **Interfaz responsive** compatible con móviles y tablets
 - ✅ **TypeScript** para mayor seguridad de tipos
 
@@ -98,9 +98,11 @@ npm run preview
 
 El sistema incluye datos de ejemplo. Puedes usar estas credenciales para probar:
 
-- **Cédula:** `V-12345678`
+- **Cédula:** `V-87654321`
 - **Contraseña:** `admin123`
 - **Rol:** Administrador
+
+> **Nota adicional:** También hay 32 empleados de prueba disponibles con contraseña `123456`
 
 ## Estructura del Proyecto
 
@@ -134,6 +136,8 @@ onboard-hhrr/
 - **Sistema de autenticación completo** con roles jerárquicos (6 niveles)
 - **Dashboard con estadísticas** en tiempo real
 - **CRUD completo de empleados** con validaciones y edición
+- **Sistema avanzado de filtros de fecha** con 4 modalidades de filtrado
+- **Fecha de ingreso integrada** en visualización de empleados
 - **Gestión de contratos** (tipos: indefinido, determinado, obra, pasantía)
 - **Estructura organizacional** jerárquica completa
 - **Dropdowns en cascada** Gerencia → Departamento → Cargo

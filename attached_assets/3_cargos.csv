@@ -1,0 +1,24 @@
+ID,Nombre,Descripción,Departamento ID,Salario Base,Nivel Jerárquico,Requiere Supervisión,Es Activo,Fecha Creación
+4c81e829-3f6b-4d1a-9e2c-8b5f4c81e829,Desarrollador Senior,,f994bbd2-8cd8-49ee-8fb7-5c2b0865503b,45000,3,TRUE,TRUE,2024-01-15
+80debc40-7a9c-5e4b-af3d-9c6a80debc40,Desarrollador Junior,,f994bbd2-8cd8-49ee-8fb7-5c2b0865503b,25000,2,TRUE,TRUE,2024-01-15
+8cb9f051-8bad-6f5c-b04e-ad7b8cb9f051,Tech Lead,,f994bbd2-8cd8-49ee-8fb7-5c2b0865503b,55000,4,FALSE,TRUE,2024-01-15
+428e2462-9cbe-706d-c15f-be8c428e2462,Administrador de Sistemas,,3b60f6fb-5839-41d6-aa41-8544e464b537,35000,3,TRUE,TRUE,2024-01-15
+f2dd6873-adcf-817e-d260-cf9df2dd6873,Especialista en Redes,,3b60f6fb-5839-41d6-aa41-8544e464b537,32000,3,TRUE,TRUE,2024-01-15
+358d0c84-be0a-928f-e371-d0ae358d0c84,Técnico de Soporte,,417fc7bd-00dc-48e8-a0c9-bc0dff18b08b,22000,2,TRUE,TRUE,2024-01-15
+9e3c4095-cf1b-a390-f482-e1bf9e3c4095,Analista de Seguridad,,df116af5-4422-4395-8806-db617ff3f73a,38000,3,TRUE,TRUE,2024-01-15
+2a8b84a6-d02c-b4a1-0593-f2c02a8b84a6,Especialista en Reclutamiento,,59a7b5b4-7832-4d96-af97-cbf36d18b684,28000,3,TRUE,TRUE,2024-01-15
+663af8b7-e13d-c5b2-16a4-03d1663af8b7,Analista de RRHH,,724f492f-d11f-4f16-8d26-3521bdb36b9d,26000,2,TRUE,TRUE,2024-01-15
+c2802cc8-f24e-d6c3-27b5-14e2c2802cc8,Coordinador de Compensaciones,,8e5c2b9f-1a4d-4c7e-9f2a-5d8e1b4c7e0a,30000,3,TRUE,TRUE,2024-01-15
+5e4960d9-035f-e7d4-38c6-25f35e4960d9,Ejecutivo de Ventas,,9f6d3c0a-2b5e-5d8f-a03b-6e9f2c5d8f1b,30000,3,TRUE,TRUE,2024-01-15
+9a1594ea-1460-f8e5-49d7-3604fa9a1594,Gerente de Cuentas,,9f6d3c0a-2b5e-5d8f-a03b-6e9f2c5d8f1b,45000,4,FALSE,TRUE,2024-01-15
+d6a4c8fb-2571-09f6-5ae8-47159dd6a4c8,Especialista en Marketing,,a07e4d1b-3c6f-6e9a-b14c-7f0a3d6e9a2c,28000,3,TRUE,TRUE,2024-01-15
+124f060c-3682-1a07-6bf9-58264124f060,Representante de Atención,,b18f5e2c-4d7a-7f0b-c25d-80b4e7f0b3d,20000,2,TRUE,TRUE,2024-01-15
+4e2d341d-4793-2b18-7c0a-6937e4e2d341,Supervisor de Producción,,c290f6d3-5e8b-801c-d36e-91c5f801c4e,40000,4,FALSE,TRUE,2024-01-15
+8a1b682e-58a4-3c29-8d1b-7a48f8a1b682,Operario de Producción,,c290f6d3-5e8b-801c-d36e-91c5f801c4e,18000,1,TRUE,TRUE,2024-01-15
+c6099c3f-69b5-4d3a-9e2c-8b59ac6099c3,Coordinador Logístico,,d3a107e4-6f9c-912d-e47f-a2d6092d5f,32000,3,TRUE,TRUE,2024-01-15
+02a7d050-7ac6-5e4b-af3d-9c6a002a7d05,Técnico de Mantenimiento,,e4b218f5-70ad-a23e-f580-b3e71a3e60,25000,2,TRUE,TRUE,2024-01-15
+3e560461-8bd7-6f5c-b04e-ad7b3e560461,Contador,,f5c329a6-81be-b34f-0691-c4f82b4f71,35000,3,TRUE,TRUE,2024-01-15
+7a043872-9ce8-706d-c15f-be8c7a043872,Analista Financiero,,061d43ab7-92cf-c450-17a2-d50935082,30000,3,TRUE,TRUE,2024-01-15
+b6b23c83-adf9-817e-d260-cf9db6b23c83,Asistente de Compras,,172e54bc8-a3d0-d561-28b3-e61a46193,22000,2,TRUE,TRUE,2024-01-15
+f2607094-be0a-928f-e371-d0aef2607094,Inspector de Calidad,,283f65cd9-b4e1-e672-39c4-f72b572a4,28000,3,TRUE,TRUE,2024-01-15
+2e0ea4a5-cf1b-a390-f482-e1bf2e0ea4a5,Analista de Procesos,,394076dea-c5f2-f783-4ad5-083c683b5,32000,3,TRUE,TRUE,2024-01-15

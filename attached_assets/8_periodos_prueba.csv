@@ -1,0 +1,5 @@
+ID,Empleado ID,Fecha Inicio,Fecha Fin,Fecha Evaluación,Evaluado Por,Estado,Calificación,Recomendación Supervisor,Notas RRHH,Aprobado,Fecha Creación,Fecha Actualización
+pp1qq2rr-ss3t-4uu5-66vv-7ww8xx9yy0zz,175b2e2c-fb51-960b-00d9-613f9a7c1799,2024-06-01,2024-12-01,,,,activo,,,FALSE,2024-06-01,2024-08-18
+qq2rr3ss-tt4u-5vv6-77ww-8xx9yy0zz1aa,397d404e-1d73-b82d-22fb-8351199399bb,2024-04-15,2024-07-15,,,,activo,,,FALSE,2024-04-15,2024-08-18
+rr3ss4tt-uu5v-6ww7-88xx-9yy0zz1aa2bb,4a8e515f-2e84-c93e-33fc-94622aa4aacc,2022-12-01,2023-06-01,2023-05-15,c2054fd7-a60c-41b6-bb84-1c8b4627f244,aprobado,4,Empleada dedicada con excelente actitud,Cumple con las expectativas,TRUE,2022-12-01,2023-06-01
+ss4tt5uu-vv6w-7xx8-99yy-0zz1aa2bb3cc,286c3f3d-0c62-a71c-11ea-724008d28aa,2021-09-12,2022-03-12,2022-02-28,c2054fd7-a60c-41b6-bb84-1c8b4627f244,aprobado,5,Excelente desempeño técnico,Supera las expectativas,TRUE,2021-09-12,2022-03-12

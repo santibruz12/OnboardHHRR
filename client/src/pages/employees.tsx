@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, MoreHorizontal, Mail, Phone, Users, Edit2, Eye, Trash2, Calendar } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Mail, Phone, Users, Edit2, Eye, Trash2, Calendar, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { EmployeeForm } from "@/components/forms/employee-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { formatDate } from "@/lib/date-utils";
+import { formatDate, calculateSeniority } from "@/lib/date-utils";
 import type { EmployeeWithRelations } from "@shared/schema";
 
 export default function Employees() {
@@ -75,8 +75,7 @@ export default function Employees() {
     let filtered = employees.filter(employee => {
       const searchMatch = employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         employee.user.cedula.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.cargo?.name.toLowerCase().includes(searchTerm.toLowerCase());
+                employee.cargo?.name.toLowerCase().includes(searchTerm.toLowerCase());
       
       const statusMatch = statusFilter === "todos" || employee.status === statusFilter;
       
@@ -181,6 +180,17 @@ export default function Employees() {
     }
   };
 
+  const resetFilters = () => {
+    setSearchTerm("");
+    setStatusFilter("todos");
+    setDateTypeFilter("ingreso");
+    setPeriodFilter("todos");
+    setYearFilter("todos");
+    setMonthFilter("todos");
+    setSortBy("fullName");
+    setSortOrder("asc");
+  };
+
   const getRoleBadge = (role: string) => {
     const roleLabels = {
       admin: "Administrador",
@@ -246,7 +256,7 @@ export default function Employees() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por nombre, cédula, email o cargo..."
+                    placeholder="Buscar por CI, nombre o cargo..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10"
@@ -283,6 +293,15 @@ export default function Employees() {
                       <SelectItem value="desc">↓ Z-A</SelectItem>
                     </SelectContent>
                   </Select>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={resetFilters}
+                    className="px-3"
+                    title="Limpiar filtros"
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
               
@@ -290,7 +309,7 @@ export default function Employees() {
                 <div className="flex gap-2 flex-1 flex-wrap">
                   {/* Filtro 1: Tipo de fecha */}
                   <Select value={dateTypeFilter} onValueChange={setDateTypeFilter}>
-                    <SelectTrigger className="w-36">
+                    <SelectTrigger className="w-40">
                       <SelectValue placeholder="Tipo fecha..." />
                     </SelectTrigger>
                     <SelectContent>
@@ -301,11 +320,11 @@ export default function Employees() {
                   
                   {/* Filtro 2: Período */}
                   <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-40">
                       <SelectValue placeholder="Período..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="todos">Todas las fechas</SelectItem>
                       <SelectItem value="este_mes">Este mes</SelectItem>
                       <SelectItem value="esta_semana">Esta semana</SelectItem>
                     </SelectContent>
@@ -313,11 +332,11 @@ export default function Employees() {
                   
                   {/* Filtro 3: Año */}
                   <Select value={yearFilter} onValueChange={setYearFilter}>
-                    <SelectTrigger className="w-24">
+                    <SelectTrigger className="w-40">
                       <SelectValue placeholder="Año..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="todos">Todos los años</SelectItem>
                       {availableYears.map(year => (
                         <SelectItem key={year} value={year.toString()}>
                           {year}
@@ -328,11 +347,11 @@ export default function Employees() {
                   
                   {/* Filtro 4: Mes */}
                   <Select value={monthFilter} onValueChange={setMonthFilter}>
-                    <SelectTrigger className="w-28">
+                    <SelectTrigger className="w-40">
                       <SelectValue placeholder="Mes..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="todos">Todos los meses</SelectItem>
                       <SelectItem value="1">Enero</SelectItem>
                       <SelectItem value="2">Febrero</SelectItem>
                       <SelectItem value="3">Marzo</SelectItem>
@@ -536,6 +555,10 @@ export default function Employees() {
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Fecha de Ingreso</label>
                   <p className="text-sm">{formatDate(viewingEmployee.startDate)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Antigüedad</label>
+                  <p className="text-sm">{calculateSeniority(viewingEmployee.startDate)}</p>
                 </div>
               </div>
 

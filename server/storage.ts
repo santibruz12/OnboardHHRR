@@ -1,5 +1,5 @@
-import { 
-  type User, 
+import {
+  type User,
   type InsertUser,
   type Employee,
   type InsertEmployee,
@@ -28,16 +28,18 @@ import {
   insertProbationPeriodSchema,
   insertEgresoSchema,
   insertJobOfferSchema,
-  insertJobApplicationSchema
+  insertJobApplicationSchema,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import bcrypt from "bcryptjs";
-import { neon } from '@neondatabase/serverless';
+import { neon } from "@neondatabase/serverless";
 
 export interface IStorage {
   // Auth
-  login(credentials: LoginData): Promise<{ user: User; employee?: EmployeeWithRelations } | null>;
-  
+  login(
+    credentials: LoginData,
+  ): Promise<{ user: User; employee?: EmployeeWithRelations } | null>;
+
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByCedula(cedula: string): Promise<User | undefined>;
@@ -47,9 +49,14 @@ export interface IStorage {
   // Employees
   getEmployees(): Promise<EmployeeWithRelations[]>;
   getEmployee(id: string): Promise<EmployeeWithRelations | undefined>;
-  getEmployeeByUserId(userId: string): Promise<EmployeeWithRelations | undefined>;
+  getEmployeeByUserId(
+    userId: string,
+  ): Promise<EmployeeWithRelations | undefined>;
   createEmployee(employee: InsertEmployee): Promise<Employee>;
-  updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined>;
+  updateEmployee(
+    id: string,
+    employee: Partial<InsertEmployee>,
+  ): Promise<Employee | undefined>;
 
   // Organizational Structure
   getGerencias(): Promise<Gerencia[]>;
@@ -64,23 +71,40 @@ export interface IStorage {
   getContract(id: string): Promise<Contract | undefined>;
   getContractsByEmployee(employeeId: string): Promise<Contract[]>;
   createContract(contract: InsertContract): Promise<Contract>;
-  updateContract(id: string, contract: Partial<InsertContract>): Promise<Contract | undefined>;
+  updateContract(
+    id: string,
+    contract: Partial<InsertContract>,
+  ): Promise<Contract | undefined>;
   deleteContract(id: string): Promise<boolean>;
   getExpiringContracts(): Promise<Contract[]>;
 
   // Candidates
   getCandidates(): Promise<CandidateWithRelations[]>;
   getCandidate(id: string): Promise<CandidateWithRelations | undefined>;
-  createCandidate(candidate: Omit<Candidate, 'id' | 'createdAt' | 'updatedAt'>): Promise<Candidate>;
-  updateCandidate(id: string, candidate: Partial<Candidate>): Promise<Candidate | undefined>;
+  createCandidate(
+    candidate: Omit<Candidate, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Candidate>;
+  updateCandidate(
+    id: string,
+    candidate: Partial<Candidate>,
+  ): Promise<Candidate | undefined>;
   deleteCandidate(id: string): Promise<boolean>;
 
   // Probation Periods
   getProbationPeriods(): Promise<ProbationPeriodWithRelations[]>;
-  getProbationPeriod(id: string): Promise<ProbationPeriodWithRelations | undefined>;
-  getProbationPeriodsByEmployee(employeeId: string): Promise<ProbationPeriodWithRelations[]>;
-  createProbationPeriod(probationPeriod: Omit<ProbationPeriod, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProbationPeriod>;
-  updateProbationPeriod(id: string, probationPeriod: Partial<ProbationPeriod>): Promise<ProbationPeriod | undefined>;
+  getProbationPeriod(
+    id: string,
+  ): Promise<ProbationPeriodWithRelations | undefined>;
+  getProbationPeriodsByEmployee(
+    employeeId: string,
+  ): Promise<ProbationPeriodWithRelations[]>;
+  createProbationPeriod(
+    probationPeriod: Omit<ProbationPeriod, "id" | "createdAt" | "updatedAt">,
+  ): Promise<ProbationPeriod>;
+  updateProbationPeriod(
+    id: string,
+    probationPeriod: Partial<ProbationPeriod>,
+  ): Promise<ProbationPeriod | undefined>;
   deleteProbationPeriod(id: string): Promise<boolean>;
   getExpiringProbationPeriods(): Promise<ProbationPeriodWithRelations[]>;
 
@@ -88,24 +112,45 @@ export interface IStorage {
   getEgresos(): Promise<EgresoWithRelations[]>;
   getEgreso(id: string): Promise<EgresoWithRelations | undefined>;
   getEgresosByEmployee(employeeId: string): Promise<EgresoWithRelations[]>;
-  createEgreso(egreso: Omit<Egreso, 'id' | 'createdAt' | 'updatedAt'>): Promise<Egreso>;
-  updateEgreso(id: string, egreso: Partial<Egreso>): Promise<Egreso | undefined>;
+  createEgreso(
+    egreso: Omit<Egreso, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Egreso>;
+  updateEgreso(
+    id: string,
+    egreso: Partial<Egreso>,
+  ): Promise<Egreso | undefined>;
   deleteEgreso(id: string): Promise<boolean>;
 
   // Job Offers
   getJobOffers(): Promise<JobOfferWithRelations[]>;
   getJobOffer(id: string): Promise<JobOfferWithRelations | undefined>;
-  createJobOffer(jobOffer: Omit<JobOffer, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobOffer>;
-  updateJobOffer(id: string, jobOffer: Partial<JobOffer>): Promise<JobOffer | undefined>;
+  createJobOffer(
+    jobOffer: Omit<JobOffer, "id" | "createdAt" | "updatedAt">,
+  ): Promise<JobOffer>;
+  updateJobOffer(
+    id: string,
+    jobOffer: Partial<JobOffer>,
+  ): Promise<JobOffer | undefined>;
   deleteJobOffer(id: string): Promise<boolean>;
 
   // Job Applications
   getJobApplications(): Promise<JobApplicationWithRelations[]>;
-  getJobApplication(id: string): Promise<JobApplicationWithRelations | undefined>;
-  getJobApplicationsByOffer(jobOfferId: string): Promise<JobApplicationWithRelations[]>;
-  getJobApplicationsByCandidate(candidateId: string): Promise<JobApplicationWithRelations[]>;
-  createJobApplication(application: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobApplication>;
-  updateJobApplication(id: string, application: Partial<JobApplication>): Promise<JobApplication | undefined>;
+  getJobApplication(
+    id: string,
+  ): Promise<JobApplicationWithRelations | undefined>;
+  getJobApplicationsByOffer(
+    jobOfferId: string,
+  ): Promise<JobApplicationWithRelations[]>;
+  getJobApplicationsByCandidate(
+    candidateId: string,
+  ): Promise<JobApplicationWithRelations[]>;
+  createJobApplication(
+    application: Omit<JobApplication, "id" | "createdAt" | "updatedAt">,
+  ): Promise<JobApplication>;
+  updateJobApplication(
+    id: string,
+    application: Partial<JobApplication>,
+  ): Promise<JobApplication | undefined>;
   deleteJobApplication(id: string): Promise<boolean>;
 
   // Dashboard
@@ -122,15 +167,20 @@ export class PostgresStorage implements IStorage {
     this.sql = neon(process.env.DATABASE_URL);
   }
 
-  async login(credentials: LoginData): Promise<{ user: User; employee?: EmployeeWithRelations } | null> {
+  async login(
+    credentials: LoginData,
+  ): Promise<{ user: User; employee?: EmployeeWithRelations } | null> {
     const userResult = await this.sql`
       SELECT * FROM users WHERE cedula = ${credentials.cedula} AND is_active = true
     `;
-    
+
     if (userResult.length === 0) return null;
-    
+
     const user = userResult[0] as User;
-    const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+    const isValidPassword = await bcrypt.compare(
+      credentials.password,
+      user.password,
+    );
     if (!isValidPassword) return null;
 
     const employee = await this.getEmployeeByUserId(user.id);
@@ -139,44 +189,59 @@ export class PostgresStorage implements IStorage {
 
   async getUser(id: string): Promise<User | undefined> {
     const result = await this.sql`SELECT * FROM users WHERE id = ${id}`;
-    return result[0] as User || undefined;
+    return (result[0] as User) || undefined;
   }
 
   async getUserByCedula(cedula: string): Promise<User | undefined> {
     const result = await this.sql`SELECT * FROM users WHERE cedula = ${cedula}`;
-    return result[0] as User || undefined;
+    return (result[0] as User) || undefined;
   }
 
   async createUser(user: InsertUser): Promise<User> {
     const result = await this.sql`
       INSERT INTO users (cedula, password, role, is_active)
-      VALUES (${user.cedula}, ${user.password}, ${user.role || 'empleado'}, ${user.isActive ?? true})
+      VALUES (${user.cedula}, ${user.password}, ${user.role || "empleado"}, ${user.isActive ?? true})
       RETURNING *
     `;
     return result[0] as User;
   }
 
-  async updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined> {
+  async updateUser(
+    id: string,
+    user: Partial<InsertUser>,
+  ): Promise<User | undefined> {
     const setClauses = [];
     const values = [];
-    
-    if (user.cedula !== undefined) { setClauses.push(`cedula = $${setClauses.length + 1}`); values.push(user.cedula); }
-    if (user.password !== undefined) { setClauses.push(`password = $${setClauses.length + 1}`); values.push(user.password); }
-    if (user.role !== undefined) { setClauses.push(`role = $${setClauses.length + 1}`); values.push(user.role); }
-    if (user.isActive !== undefined) { setClauses.push(`is_active = $${setClauses.length + 1}`); values.push(user.isActive); }
-    
+
+    if (user.cedula !== undefined) {
+      setClauses.push(`cedula = $${setClauses.length + 1}`);
+      values.push(user.cedula);
+    }
+    if (user.password !== undefined) {
+      setClauses.push(`password = $${setClauses.length + 1}`);
+      values.push(user.password);
+    }
+    if (user.role !== undefined) {
+      setClauses.push(`role = $${setClauses.length + 1}`);
+      values.push(user.role);
+    }
+    if (user.isActive !== undefined) {
+      setClauses.push(`is_active = $${setClauses.length + 1}`);
+      values.push(user.isActive);
+    }
+
     if (setClauses.length === 0) return this.getUser(id);
-    
+
     setClauses.push(`updated_at = NOW()`);
     values.push(id);
-    
+
     const result = await this.sql`
       UPDATE users 
-      SET ${this.sql.unsafe(setClauses.join(', '))}
+      SET ${this.sql.unsafe(setClauses.join(", "))}
       WHERE id = ${id}
       RETURNING *
     `;
-    return result[0] as User || undefined;
+    return (result[0] as User) || undefined;
   }
 
   async getEmployees(): Promise<EmployeeWithRelations[]> {
@@ -218,11 +283,11 @@ export class PostgresStorage implements IStorage {
       user: {
         id: row.user_id,
         cedula: row.cedula,
-        password: '', // No enviar password
+        password: "", // No enviar password
         role: row.role,
         isActive: row.user_is_active,
         createdAt: row.created_at,
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
       },
       cargo: {
         id: row.cargo_id,
@@ -238,44 +303,50 @@ export class PostgresStorage implements IStorage {
             id: row.gerencia_id,
             name: row.gerencia_name,
             description: null,
-            createdAt: row.created_at
-          }
-        }
+            createdAt: row.created_at,
+          },
+        },
       },
-      supervisor: row.supervisor_id ? {
-        id: row.supervisor_id,
-        fullName: row.supervisor_name,
-        userId: '',
-        email: '',
-        phone: null,
-        birthDate: null,
-        cargoId: '',
-        supervisorId: null,
-        startDate: '',
-        status: 'activo',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      } : undefined,
-      contract: row.contract_type ? {
-        id: '',
-        employeeId: row.id,
-        type: row.contract_type,
-        startDate: row.contract_start_date,
-        endDate: row.contract_end_date,
-        isActive: true,
-        createdAt: new Date()
-      } : undefined
+      supervisor: row.supervisor_id
+        ? {
+            id: row.supervisor_id,
+            fullName: row.supervisor_name,
+            userId: "",
+            email: "",
+            phone: null,
+            birthDate: null,
+            cargoId: "",
+            supervisorId: null,
+            startDate: "",
+            status: "activo",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }
+        : undefined,
+      contract: row.contract_type
+        ? {
+            id: "",
+            employeeId: row.id,
+            type: row.contract_type,
+            startDate: row.contract_start_date,
+            endDate: row.contract_end_date,
+            isActive: true,
+            createdAt: new Date(),
+          }
+        : undefined,
     }));
   }
 
   async getEmployee(id: string): Promise<EmployeeWithRelations | undefined> {
     const employees = await this.getEmployees();
-    return employees.find(e => e.id === id);
+    return employees.find((e) => e.id === id);
   }
 
-  async getEmployeeByUserId(userId: string): Promise<EmployeeWithRelations | undefined> {
+  async getEmployeeByUserId(
+    userId: string,
+  ): Promise<EmployeeWithRelations | undefined> {
     const employees = await this.getEmployees();
-    return employees.find(e => e.userId === userId);
+    return employees.find((e) => e.userId === userId);
   }
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
@@ -283,22 +354,29 @@ export class PostgresStorage implements IStorage {
       INSERT INTO employees (user_id, full_name, email, phone, birth_date, cargo_id, supervisor_id, start_date, status)
       VALUES (${employee.userId}, ${employee.fullName}, ${employee.email}, ${employee.phone}, 
               ${employee.birthDate}, ${employee.cargoId}, ${employee.supervisorId}, 
-              ${employee.startDate}, ${employee.status || 'activo'})
+              ${employee.startDate}, ${employee.status || "activo"})
       RETURNING *
     `;
     return result[0] as Employee;
   }
 
-  async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
+  async updateEmployee(
+    id: string,
+    employee: Partial<InsertEmployee>,
+  ): Promise<Employee | undefined> {
     if (Object.keys(employee).length === 0) {
       const result = await this.sql`SELECT * FROM employees WHERE id = ${id}`;
-      return result[0] as Employee || undefined;
+      return (result[0] as Employee) || undefined;
     }
-    
+
     // Use individual conditional updates
     let result;
-    
-    if (employee.fullName !== undefined && employee.email !== undefined && employee.phone !== undefined) {
+
+    if (
+      employee.fullName !== undefined &&
+      employee.email !== undefined &&
+      employee.phone !== undefined
+    ) {
       result = await this.sql`
         UPDATE employees 
         SET full_name = ${employee.fullName},
@@ -308,7 +386,7 @@ export class PostgresStorage implements IStorage {
             cargo_id = ${employee.cargoId || null},
             supervisor_id = ${employee.supervisorId || null},
             start_date = ${employee.startDate || null},
-            status = ${employee.status || 'activo'},
+            status = ${employee.status || "activo"},
             updated_at = NOW()
         WHERE id = ${id}
         RETURNING *
@@ -317,9 +395,9 @@ export class PostgresStorage implements IStorage {
       // For partial updates, get current data first and merge
       const current = await this.sql`SELECT * FROM employees WHERE id = ${id}`;
       if (!current[0]) return undefined;
-      
+
       const currentEmployee = current[0] as Employee;
-      
+
       result = await this.sql`
         UPDATE employees 
         SET full_name = ${employee.fullName ?? currentEmployee.fullName},
@@ -335,8 +413,8 @@ export class PostgresStorage implements IStorage {
         RETURNING *
       `;
     }
-    
-    return result[0] as Employee || undefined;
+
+    return (result[0] as Employee) || undefined;
   }
 
   async getGerencias(): Promise<Gerencia[]> {
@@ -344,13 +422,17 @@ export class PostgresStorage implements IStorage {
     return result as Gerencia[];
   }
 
-  async getDepartamentosByGerencia(gerenciaId: string): Promise<Departamento[]> {
-    const result = await this.sql`SELECT * FROM departamentos WHERE gerencia_id = ${gerenciaId} ORDER BY name`;
+  async getDepartamentosByGerencia(
+    gerenciaId: string,
+  ): Promise<Departamento[]> {
+    const result = await this
+      .sql`SELECT * FROM departamentos WHERE gerencia_id = ${gerenciaId} ORDER BY name`;
     return result as Departamento[];
   }
 
   async getCargosByDepartamento(departamentoId: string): Promise<Cargo[]> {
-    const result = await this.sql`SELECT * FROM cargos WHERE departamento_id = ${departamentoId} ORDER BY name`;
+    const result = await this
+      .sql`SELECT * FROM cargos WHERE departamento_id = ${departamentoId} ORDER BY name`;
     return result as Cargo[];
   }
 
@@ -363,7 +445,9 @@ export class PostgresStorage implements IStorage {
     return result[0] as Gerencia;
   }
 
-  async createDepartamento(departamento: InsertDepartamento): Promise<Departamento> {
+  async createDepartamento(
+    departamento: InsertDepartamento,
+  ): Promise<Departamento> {
     const result = await this.sql`
       INSERT INTO departamentos (name, gerencia_id)
       VALUES (${departamento.name}, ${departamento.gerenciaId})
@@ -394,22 +478,25 @@ export class PostgresStorage implements IStorage {
     `;
     return result.map((row: any) => ({
       ...row,
-      employee: row.employee_full_name ? {
-        id: row.employee_id,
-        fullName: row.employee_full_name,
-        email: row.employee_email,
-        cargo: row.cargo_name ? { name: row.cargo_name } : null
-      } : null
+      employee: row.employee_full_name
+        ? {
+            id: row.employee_id,
+            fullName: row.employee_full_name,
+            email: row.employee_email,
+            cargo: row.cargo_name ? { name: row.cargo_name } : null,
+          }
+        : null,
     })) as Contract[];
   }
 
   async getContract(id: string): Promise<Contract | undefined> {
     const result = await this.sql`SELECT * FROM contracts WHERE id = ${id}`;
-    return result[0] as Contract || undefined;
+    return (result[0] as Contract) || undefined;
   }
 
   async getContractsByEmployee(employeeId: string): Promise<Contract[]> {
-    const result = await this.sql`SELECT * FROM contracts WHERE employee_id = ${employeeId} ORDER BY created_at DESC`;
+    const result = await this
+      .sql`SELECT * FROM contracts WHERE employee_id = ${employeeId} ORDER BY created_at DESC`;
     return result as Contract[];
   }
 
@@ -423,26 +510,41 @@ export class PostgresStorage implements IStorage {
     return result[0] as Contract;
   }
 
-  async updateContract(id: string, contract: Partial<InsertContract>): Promise<Contract | undefined> {
+  async updateContract(
+    id: string,
+    contract: Partial<InsertContract>,
+  ): Promise<Contract | undefined> {
     const setClauses = [];
     const values = [];
-    
-    if (contract.type !== undefined) { setClauses.push(`type = $${setClauses.length + 1}`); values.push(contract.type); }
-    if (contract.startDate !== undefined) { setClauses.push(`start_date = $${setClauses.length + 1}`); values.push(contract.startDate); }
-    if (contract.endDate !== undefined) { setClauses.push(`end_date = $${setClauses.length + 1}`); values.push(contract.endDate); }
-    if (contract.isActive !== undefined) { setClauses.push(`is_active = $${setClauses.length + 1}`); values.push(contract.isActive); }
-    
+
+    if (contract.type !== undefined) {
+      setClauses.push(`type = $${setClauses.length + 1}`);
+      values.push(contract.type);
+    }
+    if (contract.startDate !== undefined) {
+      setClauses.push(`start_date = $${setClauses.length + 1}`);
+      values.push(contract.startDate);
+    }
+    if (contract.endDate !== undefined) {
+      setClauses.push(`end_date = $${setClauses.length + 1}`);
+      values.push(contract.endDate);
+    }
+    if (contract.isActive !== undefined) {
+      setClauses.push(`is_active = $${setClauses.length + 1}`);
+      values.push(contract.isActive);
+    }
+
     if (setClauses.length === 0) return this.getContract(id);
-    
+
     values.push(id);
-    
+
     const result = await this.sql`
       UPDATE contracts 
-      SET ${this.sql.unsafe(setClauses.join(', '))}
+      SET ${this.sql.unsafe(setClauses.join(", "))}
       WHERE id = ${id}
       RETURNING *
     `;
-    return result[0] as Contract || undefined;
+    return (result[0] as Contract) || undefined;
   }
 
   async deleteContract(id: string): Promise<boolean> {
@@ -510,37 +612,41 @@ export class PostgresStorage implements IStorage {
             id: row.gerencia_id,
             name: row.gerencia_name,
             description: null,
-            createdAt: row.created_at
-          }
-        }
+            createdAt: row.created_at,
+          },
+        },
       },
       submittedByUser: {
         id: row.submitted_by,
         cedula: row.submitted_by_cedula,
-        password: '',
+        password: "",
         role: row.submitted_by_role,
         isActive: true,
         createdAt: row.created_at,
-        updatedAt: row.updated_at
+        updatedAt: row.updated_at,
       },
-      evaluatedByUser: row.evaluated_by ? {
-        id: row.evaluated_by,
-        cedula: row.evaluated_by_cedula,
-        password: '',
-        role: row.evaluated_by_role,
-        isActive: true,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at
-      } : undefined
+      evaluatedByUser: row.evaluated_by
+        ? {
+            id: row.evaluated_by,
+            cedula: row.evaluated_by_cedula,
+            password: "",
+            role: row.evaluated_by_role,
+            isActive: true,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          }
+        : undefined,
     }));
   }
 
   async getCandidate(id: string): Promise<CandidateWithRelations | undefined> {
     const candidates = await this.getCandidates();
-    return candidates.find(c => c.id === id);
+    return candidates.find((c) => c.id === id);
   }
 
-  async createCandidate(candidate: Omit<Candidate, 'id' | 'createdAt' | 'updatedAt'>): Promise<Candidate> {
+  async createCandidate(
+    candidate: Omit<Candidate, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Candidate> {
     const result = await this.sql`
       INSERT INTO candidates (cedula, full_name, email, phone, birth_date, cargo_id, cv_url, notes, status, submitted_by, evaluated_by, evaluation_notes, evaluation_date)
       VALUES (${candidate.cedula}, ${candidate.fullName}, ${candidate.email}, ${candidate.phone}, 
@@ -552,31 +658,49 @@ export class PostgresStorage implements IStorage {
     return result[0] as Candidate;
   }
 
-  async updateCandidate(id: string, candidate: Partial<Candidate>): Promise<Candidate | undefined> {
+  async updateCandidate(
+    id: string,
+    candidate: Partial<Candidate>,
+  ): Promise<Candidate | undefined> {
     const setClauses = [];
     const values = [];
-    
-    if (candidate.fullName !== undefined) { setClauses.push(`full_name = $${setClauses.length + 1}`); values.push(candidate.fullName); }
-    if (candidate.email !== undefined) { setClauses.push(`email = $${setClauses.length + 1}`); values.push(candidate.email); }
-    if (candidate.phone !== undefined) { setClauses.push(`phone = $${setClauses.length + 1}`); values.push(candidate.phone); }
-    if (candidate.status !== undefined) { setClauses.push(`status = $${setClauses.length + 1}`); values.push(candidate.status); }
-    if (candidate.evaluationNotes !== undefined) { setClauses.push(`evaluation_notes = $${setClauses.length + 1}`); values.push(candidate.evaluationNotes); }
-    
+
+    if (candidate.fullName !== undefined) {
+      setClauses.push(`full_name = $${setClauses.length + 1}`);
+      values.push(candidate.fullName);
+    }
+    if (candidate.email !== undefined) {
+      setClauses.push(`email = $${setClauses.length + 1}`);
+      values.push(candidate.email);
+    }
+    if (candidate.phone !== undefined) {
+      setClauses.push(`phone = $${setClauses.length + 1}`);
+      values.push(candidate.phone);
+    }
+    if (candidate.status !== undefined) {
+      setClauses.push(`status = $${setClauses.length + 1}`);
+      values.push(candidate.status);
+    }
+    if (candidate.evaluationNotes !== undefined) {
+      setClauses.push(`evaluation_notes = $${setClauses.length + 1}`);
+      values.push(candidate.evaluationNotes);
+    }
+
     if (setClauses.length === 0) {
       const result = await this.sql`SELECT * FROM candidates WHERE id = ${id}`;
-      return result[0] as Candidate || undefined;
+      return (result[0] as Candidate) || undefined;
     }
-    
+
     setClauses.push(`updated_at = NOW()`);
     values.push(id);
-    
+
     const result = await this.sql`
       UPDATE candidates 
-      SET ${this.sql.unsafe(setClauses.join(', '))}
+      SET ${this.sql.unsafe(setClauses.join(", "))}
       WHERE id = ${id}
       RETURNING *
     `;
-    return result[0] as Candidate || undefined;
+    return (result[0] as Candidate) || undefined;
   }
 
   async deleteCandidate(id: string): Promise<boolean> {
@@ -585,15 +709,24 @@ export class PostgresStorage implements IStorage {
   }
 
   async getDashboardStats(): Promise<DashboardStats> {
-    const [employeeStats, contractStats, candidateStats, probationStats] = await Promise.all([
-      this.sql`SELECT COUNT(*) as total, status FROM employees GROUP BY status`,
-      this.sql`SELECT COUNT(*) as expiring FROM contracts WHERE end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days' AND is_active = true`,
-      this.sql`SELECT COUNT(*) as total FROM candidates`,
-      this.sql`SELECT COUNT(*) as active FROM probation_periods WHERE status = 'activo'`
-    ]);
+    const [employeeStats, contractStats, candidateStats, probationStats] =
+      await Promise.all([
+        this
+          .sql`SELECT COUNT(*) as total, status FROM employees GROUP BY status`,
+        this
+          .sql`SELECT COUNT(*) as expiring FROM contracts WHERE end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days' AND is_active = true`,
+        this.sql`SELECT COUNT(*) as total FROM candidates`,
+        this
+          .sql`SELECT COUNT(*) as active FROM probation_periods WHERE status = 'activo'`,
+      ]);
 
-    const totalEmployees = employeeStats.reduce((sum: number, stat: any) => sum + parseInt(stat.total), 0);
-    const probationEmployees = employeeStats.find((stat: any) => stat.status === 'periodo_prueba')?.total || 0;
+    const totalEmployees = employeeStats.reduce(
+      (sum: number, stat: any) => sum + parseInt(stat.total),
+      0,
+    );
+    const probationEmployees =
+      employeeStats.find((stat: any) => stat.status === "periodo_prueba")
+        ?.total || 0;
     const expiringContracts = contractStats[0]?.expiring || 0;
     const totalCandidates = candidateStats[0]?.total || 0;
     const activeProbationPeriods = probationStats[0]?.active || 0;
@@ -603,35 +736,115 @@ export class PostgresStorage implements IStorage {
       probationEmployees: parseInt(probationEmployees),
       expiringContracts: parseInt(expiringContracts),
       totalCandidates: parseInt(totalCandidates),
-      activeProbationPeriods: parseInt(activeProbationPeriods)
+      activeProbationPeriods: parseInt(activeProbationPeriods),
     };
   }
 
   // Métodos stub para completar la interfaz (implementar según sea necesario)
-  async getProbationPeriods(): Promise<ProbationPeriodWithRelations[]> { return []; }
-  async getProbationPeriod(id: string): Promise<ProbationPeriodWithRelations | undefined> { return undefined; }
-  async getProbationPeriodsByEmployee(employeeId: string): Promise<ProbationPeriodWithRelations[]> { return []; }
-  async createProbationPeriod(period: Omit<ProbationPeriod, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProbationPeriod> { throw new Error("Not implemented"); }
-  async updateProbationPeriod(id: string, period: Partial<ProbationPeriod>): Promise<ProbationPeriod | undefined> { return undefined; }
-  async deleteProbationPeriod(id: string): Promise<boolean> { return false; }
-  async getEgresos(): Promise<EgresoWithRelations[]> { return []; }
-  async getEgreso(id: string): Promise<EgresoWithRelations | undefined> { return undefined; }
-  async getEgresosByEmployee(employeeId: string): Promise<EgresoWithRelations[]> { return []; }
-  async createEgreso(egreso: Omit<Egreso, 'id' | 'createdAt' | 'updatedAt'>): Promise<Egreso> { throw new Error("Not implemented"); }
-  async updateEgreso(id: string, egreso: Partial<Egreso>): Promise<Egreso | undefined> { return undefined; }
-  async deleteEgreso(id: string): Promise<boolean> { return false; }
-  async getJobOffers(): Promise<JobOfferWithRelations[]> { return []; }
-  async getJobOffer(id: string): Promise<JobOfferWithRelations | undefined> { return undefined; }
-  async createJobOffer(jobOffer: Omit<JobOffer, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobOffer> { throw new Error("Not implemented"); }
-  async updateJobOffer(id: string, jobOffer: Partial<JobOffer>): Promise<JobOffer | undefined> { return undefined; }
-  async deleteJobOffer(id: string): Promise<boolean> { return false; }
-  async getJobApplications(): Promise<JobApplicationWithRelations[]> { return []; }
-  async getJobApplication(id: string): Promise<JobApplicationWithRelations | undefined> { return undefined; }
-  async getJobApplicationsByOffer(jobOfferId: string): Promise<JobApplicationWithRelations[]> { return []; }
-  async getJobApplicationsByCandidate(candidateId: string): Promise<JobApplicationWithRelations[]> { return []; }
-  async createJobApplication(application: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobApplication> { throw new Error("Not implemented"); }
-  async updateJobApplication(id: string, application: Partial<JobApplication>): Promise<JobApplication | undefined> { return undefined; }
-  async deleteJobApplication(id: string): Promise<boolean> { return false; }
+  async getProbationPeriods(): Promise<ProbationPeriodWithRelations[]> {
+    return [];
+  }
+  async getProbationPeriod(
+    id: string,
+  ): Promise<ProbationPeriodWithRelations | undefined> {
+    return undefined;
+  }
+  async getProbationPeriodsByEmployee(
+    employeeId: string,
+  ): Promise<ProbationPeriodWithRelations[]> {
+    return [];
+  }
+  async createProbationPeriod(
+    period: Omit<ProbationPeriod, "id" | "createdAt" | "updatedAt">,
+  ): Promise<ProbationPeriod> {
+    throw new Error("Not implemented");
+  }
+  async updateProbationPeriod(
+    id: string,
+    period: Partial<ProbationPeriod>,
+  ): Promise<ProbationPeriod | undefined> {
+    return undefined;
+  }
+  async deleteProbationPeriod(id: string): Promise<boolean> {
+    return false;
+  }
+  async getEgresos(): Promise<EgresoWithRelations[]> {
+    return [];
+  }
+  async getEgreso(id: string): Promise<EgresoWithRelations | undefined> {
+    return undefined;
+  }
+  async getEgresosByEmployee(
+    employeeId: string,
+  ): Promise<EgresoWithRelations[]> {
+    return [];
+  }
+  async createEgreso(
+    egreso: Omit<Egreso, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Egreso> {
+    throw new Error("Not implemented");
+  }
+  async updateEgreso(
+    id: string,
+    egreso: Partial<Egreso>,
+  ): Promise<Egreso | undefined> {
+    return undefined;
+  }
+  async deleteEgreso(id: string): Promise<boolean> {
+    return false;
+  }
+  async getJobOffers(): Promise<JobOfferWithRelations[]> {
+    return [];
+  }
+  async getJobOffer(id: string): Promise<JobOfferWithRelations | undefined> {
+    return undefined;
+  }
+  async createJobOffer(
+    jobOffer: Omit<JobOffer, "id" | "createdAt" | "updatedAt">,
+  ): Promise<JobOffer> {
+    throw new Error("Not implemented");
+  }
+  async updateJobOffer(
+    id: string,
+    jobOffer: Partial<JobOffer>,
+  ): Promise<JobOffer | undefined> {
+    return undefined;
+  }
+  async deleteJobOffer(id: string): Promise<boolean> {
+    return false;
+  }
+  async getJobApplications(): Promise<JobApplicationWithRelations[]> {
+    return [];
+  }
+  async getJobApplication(
+    id: string,
+  ): Promise<JobApplicationWithRelations | undefined> {
+    return undefined;
+  }
+  async getJobApplicationsByOffer(
+    jobOfferId: string,
+  ): Promise<JobApplicationWithRelations[]> {
+    return [];
+  }
+  async getJobApplicationsByCandidate(
+    candidateId: string,
+  ): Promise<JobApplicationWithRelations[]> {
+    return [];
+  }
+  async createJobApplication(
+    application: Omit<JobApplication, "id" | "createdAt" | "updatedAt">,
+  ): Promise<JobApplication> {
+    throw new Error("Not implemented");
+  }
+  async updateJobApplication(
+    id: string,
+    application: Partial<JobApplication>,
+  ): Promise<JobApplication | undefined> {
+    return undefined;
+  }
+  async deleteJobApplication(id: string): Promise<boolean> {
+    return false;
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -655,140 +868,337 @@ export class MemStorage implements IStorage {
     // Create default organizational structure
     const gerenciaRRHH = await this.createGerencia({
       name: "Gerencia de RRHH",
-      description: "Gestión de Recursos Humanos"
+      description: "Gestión de Recursos Humanos",
     });
 
     const gerenciaOps = await this.createGerencia({
-      name: "Gerencia de Operaciones", 
-      description: "Operaciones y Producción"
+      name: "Gerencia de Operaciones",
+      description: "Operaciones y Producción",
     });
 
+    const gerenciaIT = await this.createGerencia({
+      name: "Gerencia de Tecnología",
+      description: "Sistemas y Tecnología",
+    });
+
+    // Departamentos
     const deptRRHH = await this.createDepartamento({
       name: "Administración de Personal",
-      gerenciaId: gerenciaRRHH.id
+      gerenciaId: gerenciaRRHH.id,
     });
 
     const deptReclutamiento = await this.createDepartamento({
       name: "Reclutamiento y Selección",
-      gerenciaId: gerenciaRRHH.id
+      gerenciaId: gerenciaRRHH.id,
     });
 
+    const deptProduccion = await this.createDepartamento({
+      name: "Producción",
+      gerenciaId: gerenciaOps.id,
+    });
+
+    const deptCalidad = await this.createDepartamento({
+      name: "Control de Calidad",
+      gerenciaId: gerenciaOps.id,
+    });
+
+    const deptDesarrollo = await this.createDepartamento({
+      name: "Desarrollo de Software",
+      gerenciaId: gerenciaIT.id,
+    });
+
+    const deptSoporte = await this.createDepartamento({
+      name: "Soporte Técnico",
+      gerenciaId: gerenciaIT.id,
+    });
+
+    // Cargos
     const cargoGerente = await this.createCargo({
       name: "Gerente RRHH",
-      departamentoId: deptRRHH.id
+      departamentoId: deptRRHH.id,
     });
 
     const cargoAnalista = await this.createCargo({
       name: "Analista RRHH",
-      departamentoId: deptRRHH.id
+      departamentoId: deptRRHH.id,
     });
 
-    // Create default admin user
-    const adminUser = await this.createUser({
-      cedula: "V-12345678",
-      password: await bcrypt.hash("admin123", 10),
-      role: "admin",
-      isActive: true
+    const cargoReclutador = await this.createCargo({
+      name: "Especialista en Reclutamiento",
+      departamentoId: deptReclutamiento.id,
     });
 
-    // Create admin employee
-    const adminEmployee = await this.createEmployee({
-      userId: adminUser.id,
-      fullName: "María Pérez",
-      email: "maria.perez@empresa.com",
-      phone: "+58 412-1234567",
-      cargoId: cargoGerente.id,
-      startDate: new Date().toISOString().split('T')[0] as any,
-      status: "activo"
+    const cargoSupervisorProd = await this.createCargo({
+      name: "Supervisor de Producción",
+      departamentoId: deptProduccion.id,
     });
 
-    // Create some sample contracts
-    await this.createContract({
-      employeeId: adminEmployee.id,
-      type: "indefinido",
-      startDate: new Date().toISOString().split('T')[0] as any,
-      endDate: null,
-      isActive: true
+    const cargoOperario = await this.createCargo({
+      name: "Operario de Producción",
+      departamentoId: deptProduccion.id,
     });
 
-    // Create a contract expiring soon for demo
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + 20);
-    
-    await this.createContract({
-      employeeId: adminEmployee.id,
-      type: "determinado",
-      startDate: new Date().toISOString().split('T')[0] as any,
-      endDate: futureDate.toISOString().split('T')[0] as any,
-      isActive: true
+    const cargoInspector = await this.createCargo({
+      name: "Inspector de Calidad",
+      departamentoId: deptCalidad.id,
     });
+
+    const cargoDevSenior = await this.createCargo({
+      name: "Desarrollador Senior",
+      departamentoId: deptDesarrollo.id,
+    });
+
+    const cargoDevJunior = await this.createCargo({
+      name: "Desarrollador Junior",
+      departamentoId: deptDesarrollo.id,
+    });
+
+    const cargoTechLead = await this.createCargo({
+      name: "Tech Lead",
+      departamentoId: deptDesarrollo.id,
+    });
+
+    const cargoSoporte = await this.createCargo({
+      name: "Técnico de Soporte",
+      departamentoId: deptSoporte.id,
+    });
+
+    // Datos de empleados
+    const empleadosData = [
+      {
+        cedula: "V-12345678",
+        fullName: "María González",
+        email: "maria.gonzalez@empresa.com",
+        phone: "+58 414-1234567",
+        birthDate: "1985-03-15",
+        cargo: cargoGerente,
+        role: "admin",
+        status: "activo",
+        startDate: "2024-01-15",
+        probation: false,
+      },
+      {
+        cedula: "V-23456789",
+        fullName: "Carlos Rodríguez",
+        email: "carlos.rodriguez@empresa.com",
+        phone: "+58 424-2345678",
+        birthDate: "1990-07-22",
+        cargo: cargoAnalista,
+        role: "admin_rrhh",
+        status: "activo",
+        startDate: "2021-05-10",
+        probation: false,
+      },
+      {
+        cedula: "V-34567890",
+        fullName: "Ana Martínez",
+        email: "ana.martinez@empresa.com",
+        phone: "+58 416-3456789",
+        birthDate: "1988-11-08",
+        cargo: cargoReclutador,
+        role: "empleado_captacion",
+        status: "activo",
+        startDate: "2022-02-14",
+        probation: false,
+      },
+      {
+        cedula: "V-45678901",
+        fullName: "Luis Pérez",
+        email: "luis.perez@empresa.com",
+        phone: "+58 426-4567890",
+        birthDate: "1982-12-03",
+        cargo: cargoSupervisorProd,
+        role: "supervisor",
+        status: "activo",
+        startDate: "2019-08-20",
+        probation: false,
+      },
+      {
+        cedula: "V-56789012",
+        fullName: "Sandra López",
+        email: "sandra.lopez@empresa.com",
+        phone: "+58 414-5678901",
+        birthDate: "1992-04-18",
+        cargo: cargoDevSenior,
+        role: "empleado",
+        status: "activo",
+        startDate: "2023-01-15",
+        probation: false,
+      },
+      {
+        cedula: "V-67890123",
+        fullName: "Roberto Silva",
+        email: "roberto.silva@empresa.com",
+        phone: "+58 424-6789012",
+        birthDate: "1995-09-25",
+        cargo: cargoDevJunior,
+        role: "empleado",
+        status: "periodo_prueba",
+        startDate: "2025-07-29",
+        probation: true,
+      },
+      {
+        cedula: "V-78901234",
+        fullName: "Carmen Díaz",
+        email: "carmen.diaz@empresa.com",
+        phone: "+58 416-7890123",
+        birthDate: "1987-06-12",
+        cargo: cargoTechLead,
+        role: "empleado",
+        status: "activo",
+        startDate: "2025-06-08",
+        probation: false,
+      },
+      {
+        cedula: "V-89012345",
+        fullName: "Diego Morales",
+        email: "diego.morales@empresa.com",
+        phone: "+58 426-8901234",
+        birthDate: "1991-01-30",
+        cargo: cargoOperario,
+        role: "empleado",
+        status: "periodo_prueba",
+        startDate: "2025-08-15",
+        probation: true,
+      },
+      {
+        cedula: "V-90123456",
+        fullName: "Patricia Ruiz",
+        email: "patricia.ruiz@empresa.com",
+        phone: "+58 414-9012345",
+        birthDate: "1989-08-07",
+        cargo: cargoInspector,
+        role: "empleado",
+        status: "activo",
+        startDate: "2025-07-03",
+        probation: false,
+      },
+      {
+        cedula: "V-01234567",
+        fullName: "Fernando Castro",
+        email: "fernando.castro@empresa.com",
+        phone: "+58 424-0123456",
+        birthDate: "1993-05-14",
+        cargo: cargoSoporte,
+        role: "empleado",
+        status: "periodo_prueba",
+        startDate: "2025-07-01",
+        probation: true,
+      },
+    ];
+
+    const employees = [];
+    const users = [];
+
+    // Create users and employees
+    for (const empleado of empleadosData) {
+      const user = await this.createUser({
+        cedula: empleado.cedula,
+        password: await bcrypt.hash("123456", 10),
+        role: empleado.role as any,
+        isActive: true,
+      });
+      users.push(user);
+
+      const employee = await this.createEmployee({
+        userId: user.id,
+        fullName: empleado.fullName,
+        email: empleado.email,
+        phone: empleado.phone,
+        birthDate: empleado.birthDate as any,
+        cargoId: empleado.cargo.id,
+        startDate: empleado.startDate as any,
+        status: empleado.status as any,
+      });
+      employees.push({ ...employee, empleadoData: empleado });
+
+      // Create contract for each employee
+      const startDate = new Date(empleado.startDate);
+      const contractType = empleado.probation
+        ? "determinado"
+        : Math.random() > 0.3
+          ? "indefinido"
+          : "determinado";
+      let endDate = null;
+
+      if (contractType === "determinado") {
+        endDate = new Date(startDate);
+        if (empleado.probation) {
+          endDate.setMonth(endDate.getMonth() + 3); // 3 meses para periodo de prueba
+        } else {
+          endDate.setFullYear(endDate.getFullYear() + 1); // 1 año para contratos determinados
+        }
+      }
+
+      await this.createContract({
+        employeeId: employee.id,
+        type: contractType as any,
+        startDate: empleado.startDate as any,
+        endDate: endDate ? (endDate.toISOString().split("T")[0] as any) : null,
+        isActive: true,
+      });
+    }
+
+    // Create probation periods for employees with probation status
+    for (const employee of employees) {
+      if (employee.empleadoData.probation) {
+        const startDate = new Date(employee.empleadoData.startDate);
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + 3); // 3 meses de periodo de prueba
+
+        await this.createProbationPeriod({
+          employeeId: employee.id,
+          startDate: employee.empleadoData.startDate as any,
+          endDate: endDate.toISOString().split("T")[0] as any,
+          status: "activo",
+          evaluationNotes:
+            "Empleado en período de prueba, evaluación en progreso",
+          supervisorRecommendation: "Pendiente de evaluación",
+          hrNotes: "Seguimiento mensual programado",
+        });
+      }
+    }
 
     // Create some sample candidates
     await this.createCandidate({
-      cedula: "V-23456789",
-      fullName: "Carlos Rodríguez",
-      email: "carlos.rodriguez@example.com",
-      phone: "+58 414-2345678",
-      birthDate: "1990-05-15",
+      cedula: "V-11111111",
+      fullName: "Julia Fernández",
+      email: "julia.fernandez@example.com",
+      phone: "+58 414-1111111",
+      birthDate: "1994-03-20",
       cargoId: cargoAnalista.id,
       status: "en_evaluacion",
-      submittedBy: adminUser.id,
-      notes: "Candidato con experiencia en análisis de datos"
+      submittedBy: users[0].id,
+      notes:
+        "Candidata con experiencia en análisis de datos y gestión de personal",
     });
 
     await this.createCandidate({
-      cedula: "V-34567890",
-      fullName: "Ana García",
-      email: "ana.garcia@example.com",
-      phone: "+58 412-3456789",
-      birthDate: "1985-08-22",
-      cargoId: cargoAnalista.id,
+      cedula: "V-22222222",
+      fullName: "Miguel Herrera",
+      email: "miguel.herrera@example.com",
+      phone: "+58 424-2222222",
+      birthDate: "1990-11-15",
+      cargoId: cargoDevJunior.id,
       status: "entrevista",
-      submittedBy: adminUser.id,
-      evaluatedBy: adminUser.id,
-      evaluationDate: new Date().toISOString().split('T')[0],
-      evaluationNotes: "Candidato con excelentes referencias",
-      notes: "Experiencia previa en recursos humanos"
-    });
-
-    // Create sample probation periods
-    const probationStartDate = new Date();
-    probationStartDate.setDate(probationStartDate.getDate() - 60); // Started 60 days ago
-    const probationEndDate = new Date();
-    probationEndDate.setDate(probationEndDate.getDate() + 30); // Ends in 30 days
-
-    await this.createProbationPeriod({
-      employeeId: adminEmployee.id,
-      startDate: probationStartDate.toISOString().split('T')[0] as any,
-      endDate: probationEndDate.toISOString().split('T')[0] as any,
-      status: "activo",
-      evaluationNotes: "Empleado muestra buen desempeño durante el período de prueba",
-      supervisorRecommendation: "Recomiendo la confirmación del empleado",
-      hrNotes: "Cumple con los objetivos establecidos para el período de prueba"
-    });
-
-    // Create another probation period that expires soon
-    const urgentProbationEnd = new Date();
-    urgentProbationEnd.setDate(urgentProbationEnd.getDate() + 15); // Expires in 15 days
-
-    const urgentProbationStart = new Date();
-    urgentProbationStart.setDate(urgentProbationStart.getDate() - 75); // Started 75 days ago
-
-    await this.createProbationPeriod({
-      employeeId: adminEmployee.id,
-      startDate: urgentProbationStart.toISOString().split('T')[0] as any,
-      endDate: urgentProbationEnd.toISOString().split('T')[0] as any,
-      status: "activo",
-      evaluationNotes: "Período de prueba próximo a vencer, requiere evaluación",
-      supervisorRecommendation: "Pendiente de evaluación final"
+      submittedBy: users[0].id,
+      evaluatedBy: users[1].id,
+      evaluationDate: new Date().toISOString().split("T")[0],
+      evaluationNotes: "Candidato con sólidos conocimientos técnicos",
+      notes: "Experiencia previa en desarrollo web",
     });
   }
 
-  async login(credentials: LoginData): Promise<{ user: User; employee?: EmployeeWithRelations } | null> {
+  async login(
+    credentials: LoginData,
+  ): Promise<{ user: User; employee?: EmployeeWithRelations } | null> {
     const user = await this.getUserByCedula(credentials.cedula);
     if (!user || !user.isActive) return null;
 
-    const isValidPassword = await bcrypt.compare(credentials.password, user.password);
+    const isValidPassword = await bcrypt.compare(
+      credentials.password,
+      user.password,
+    );
     if (!isValidPassword) return null;
 
     const employee = await this.getEmployeeByUserId(user.id);
@@ -800,7 +1210,9 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByCedula(cedula: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(user => user.cedula === cedula);
+    return Array.from(this.users.values()).find(
+      (user) => user.cedula === cedula,
+    );
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -812,13 +1224,16 @@ export class MemStorage implements IStorage {
       role: insertUser.role || "empleado",
       isActive: insertUser.isActive ?? true,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
     this.users.set(id, user);
     return user;
   }
 
-  async updateUser(id: string, updateData: Partial<InsertUser>): Promise<User | undefined> {
+  async updateUser(
+    id: string,
+    updateData: Partial<InsertUser>,
+  ): Promise<User | undefined> {
     const user = this.users.get(id);
     if (!user) return undefined;
 
@@ -837,13 +1252,17 @@ export class MemStorage implements IStorage {
       if (!user || !cargo) continue;
 
       const departamento = this.departamentos.get(cargo.departamentoId);
-      const gerencia = departamento ? this.gerencias.get(departamento.gerenciaId) : undefined;
-      
+      const gerencia = departamento
+        ? this.gerencias.get(departamento.gerenciaId)
+        : undefined;
+
       if (!departamento || !gerencia) continue;
 
-      const supervisor = employee.supervisorId ? this.employees.get(employee.supervisorId) : undefined;
+      const supervisor = employee.supervisorId
+        ? this.employees.get(employee.supervisorId)
+        : undefined;
       const contracts = await this.getContractsByEmployee(employee.id);
-      const activeContract = contracts.find(c => c.isActive);
+      const activeContract = contracts.find((c) => c.isActive);
 
       result.push({
         ...employee,
@@ -852,11 +1271,11 @@ export class MemStorage implements IStorage {
           ...cargo,
           departamento: {
             ...departamento,
-            gerencia
-          }
+            gerencia,
+          },
         },
         supervisor,
-        contract: activeContract
+        contract: activeContract,
       });
     }
 
@@ -868,12 +1287,14 @@ export class MemStorage implements IStorage {
     if (!employee) return undefined;
 
     const employees = await this.getEmployees();
-    return employees.find(e => e.id === id);
+    return employees.find((e) => e.id === id);
   }
 
-  async getEmployeeByUserId(userId: string): Promise<EmployeeWithRelations | undefined> {
+  async getEmployeeByUserId(
+    userId: string,
+  ): Promise<EmployeeWithRelations | undefined> {
     const employees = await this.getEmployees();
-    return employees.find(e => e.userId === userId);
+    return employees.find((e) => e.userId === userId);
   }
 
   async createEmployee(insertEmployee: InsertEmployee): Promise<Employee> {
@@ -890,26 +1311,29 @@ export class MemStorage implements IStorage {
       startDate: insertEmployee.startDate,
       status: insertEmployee.status ?? "activo",
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
     this.employees.set(id, employee);
     return employee;
   }
 
-  async updateEmployee(id: string, updateData: Partial<InsertEmployee>): Promise<EmployeeWithRelations | undefined> {
+  async updateEmployee(
+    id: string,
+    updateData: Partial<InsertEmployee>,
+  ): Promise<EmployeeWithRelations | undefined> {
     const employee = this.employees.get(id);
     if (!employee) return undefined;
 
-    const updatedEmployee = { 
-      ...employee, 
-      ...updateData, 
+    const updatedEmployee = {
+      ...employee,
+      ...updateData,
       id: employee.id,
       userId: employee.userId,
       createdAt: employee.createdAt,
-      updatedAt: new Date() 
+      updatedAt: new Date(),
     };
     this.employees.set(id, updatedEmployee);
-    
+
     // Return full employee with relations
     return await this.getEmployee(id);
   }
@@ -922,12 +1346,18 @@ export class MemStorage implements IStorage {
     return Array.from(this.gerencias.values());
   }
 
-  async getDepartamentosByGerencia(gerenciaId: string): Promise<Departamento[]> {
-    return Array.from(this.departamentos.values()).filter(dept => dept.gerenciaId === gerenciaId);
+  async getDepartamentosByGerencia(
+    gerenciaId: string,
+  ): Promise<Departamento[]> {
+    return Array.from(this.departamentos.values()).filter(
+      (dept) => dept.gerenciaId === gerenciaId,
+    );
   }
 
   async getCargosByDepartamento(departamentoId: string): Promise<Cargo[]> {
-    return Array.from(this.cargos.values()).filter(cargo => cargo.departamentoId === departamentoId);
+    return Array.from(this.cargos.values()).filter(
+      (cargo) => cargo.departamentoId === departamentoId,
+    );
   }
 
   async createGerencia(insertGerencia: InsertGerencia): Promise<Gerencia> {
@@ -936,20 +1366,22 @@ export class MemStorage implements IStorage {
       id,
       name: insertGerencia.name,
       description: insertGerencia.description || null,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
     this.gerencias.set(id, gerencia);
     return gerencia;
   }
 
-  async createDepartamento(insertDepartamento: InsertDepartamento): Promise<Departamento> {
+  async createDepartamento(
+    insertDepartamento: InsertDepartamento,
+  ): Promise<Departamento> {
     const id = randomUUID();
     const departamento: Departamento = {
       id,
       name: insertDepartamento.name,
 
       gerenciaId: insertDepartamento.gerenciaId,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
     this.departamentos.set(id, departamento);
     return departamento;
@@ -962,18 +1394,51 @@ export class MemStorage implements IStorage {
       name: insertCargo.name,
 
       departamentoId: insertCargo.departamentoId,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
     this.cargos.set(id, cargo);
     return cargo;
   }
 
-  async getContractsByEmployee(employeeId: string): Promise<Contract[]> {
-    return Array.from(this.contracts.values()).filter(contract => contract.employeeId === employeeId);
+  async getContracts(): Promise<ContractWithEmployee[]> {
+    const contractsArray = Array.from(this.contracts.values());
+    const results: ContractWithEmployee[] = [];
+
+    for (const contract of contractsArray) {
+      const employee = this.employees.get(contract.employeeId);
+      if (!employee) continue;
+
+      const cargo = this.cargos.get(employee.cargoId);
+      if (!cargo) continue;
+
+      const departamento = this.departamentos.get(cargo.departamentoId);
+      if (!departamento) continue;
+
+      const gerencia = this.gerencias.get(departamento.gerenciaId);
+      if (!gerencia) continue;
+
+      results.push({
+        ...contract,
+        employee: {
+          ...employee,
+          cargo: {
+            ...cargo,
+            departamento: {
+              ...departamento,
+              gerencia,
+            },
+          },
+        },
+      });
+    }
+
+    return results;
   }
 
-  async getContracts(): Promise<Contract[]> {
-    return Array.from(this.contracts.values());
+  async getContractsByEmployee(employeeId: string): Promise<Contract[]> {
+    return Array.from(this.contracts.values()).filter(
+      (contract) => contract.employeeId === employeeId,
+    );
   }
 
   async getContract(id: string): Promise<Contract | undefined> {
@@ -989,21 +1454,24 @@ export class MemStorage implements IStorage {
       startDate: insertContract.startDate,
       endDate: insertContract.endDate || null,
       isActive: insertContract.isActive ?? true,
-      createdAt: new Date()
+      createdAt: new Date(),
     };
     this.contracts.set(id, contract);
     return contract;
   }
 
-  async updateContract(id: string, updates: Partial<InsertContract>): Promise<Contract | undefined> {
+  async updateContract(
+    id: string,
+    updates: Partial<InsertContract>,
+  ): Promise<Contract | undefined> {
     const contract = this.contracts.get(id);
     if (!contract) return undefined;
-    
+
     const updatedContract: Contract = {
       ...contract,
       ...updates,
       id: contract.id,
-      createdAt: contract.createdAt
+      createdAt: contract.createdAt,
     };
     this.contracts.set(id, updatedContract);
     return updatedContract;
@@ -1031,7 +1499,9 @@ export class MemStorage implements IStorage {
       const submittedByUser = this.users.get(candidate.submittedBy);
       if (!submittedByUser) continue;
 
-      const evaluatedByUser = candidate.evaluatedBy ? this.users.get(candidate.evaluatedBy) : undefined;
+      const evaluatedByUser = candidate.evaluatedBy
+        ? this.users.get(candidate.evaluatedBy)
+        : undefined;
 
       results.push({
         ...candidate,
@@ -1039,11 +1509,11 @@ export class MemStorage implements IStorage {
           ...cargo,
           departamento: {
             ...departamento,
-            gerencia
-          }
+            gerencia,
+          },
         },
         submittedByUser,
-        evaluatedByUser
+        evaluatedByUser,
       });
     }
 
@@ -1066,7 +1536,9 @@ export class MemStorage implements IStorage {
     const submittedByUser = this.users.get(candidate.submittedBy);
     if (!submittedByUser) return undefined;
 
-    const evaluatedByUser = candidate.evaluatedBy ? this.users.get(candidate.evaluatedBy) : undefined;
+    const evaluatedByUser = candidate.evaluatedBy
+      ? this.users.get(candidate.evaluatedBy)
+      : undefined;
 
     return {
       ...candidate,
@@ -1074,37 +1546,42 @@ export class MemStorage implements IStorage {
         ...cargo,
         departamento: {
           ...departamento,
-          gerencia
-        }
+          gerencia,
+        },
       },
       submittedByUser,
-      evaluatedByUser
+      evaluatedByUser,
     };
   }
 
-  async createCandidate(candidateData: Omit<Candidate, 'id' | 'createdAt' | 'updatedAt'>): Promise<Candidate> {
+  async createCandidate(
+    candidateData: Omit<Candidate, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Candidate> {
     const id = randomUUID();
     const now = new Date().toISOString() as any;
     const candidate: Candidate = {
       id,
       ...candidateData,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     this.candidates.set(id, candidate);
     return candidate;
   }
 
-  async updateCandidate(id: string, updates: Partial<Candidate>): Promise<Candidate | undefined> {
+  async updateCandidate(
+    id: string,
+    updates: Partial<Candidate>,
+  ): Promise<Candidate | undefined> {
     const candidate = this.candidates.get(id);
     if (!candidate) return undefined;
-    
+
     const updatedCandidate: Candidate = {
       ...candidate,
       ...updates,
       id: candidate.id,
       createdAt: candidate.createdAt,
-      updatedAt: new Date().toISOString() as any
+      updatedAt: new Date().toISOString() as any,
     };
     this.candidates.set(id, updatedCandidate);
     return updatedCandidate;
@@ -1135,7 +1612,9 @@ export class MemStorage implements IStorage {
       const gerencia = this.gerencias.get(departamento.gerenciaId);
       if (!gerencia) continue;
 
-      const evaluatedByUser = probationPeriod.evaluatedBy ? this.users.get(probationPeriod.evaluatedBy) : undefined;
+      const evaluatedByUser = probationPeriod.evaluatedBy
+        ? this.users.get(probationPeriod.evaluatedBy)
+        : undefined;
 
       results.push({
         ...probationPeriod,
@@ -1146,18 +1625,20 @@ export class MemStorage implements IStorage {
             ...cargo,
             departamento: {
               ...departamento,
-              gerencia
-            }
-          }
+              gerencia,
+            },
+          },
         },
-        evaluatedByUser
+        evaluatedByUser,
       });
     }
 
     return results;
   }
 
-  async getProbationPeriod(id: string): Promise<ProbationPeriodWithRelations | undefined> {
+  async getProbationPeriod(
+    id: string,
+  ): Promise<ProbationPeriodWithRelations | undefined> {
     const probationPeriod = this.probationPeriods.get(id);
     if (!probationPeriod) return undefined;
 
@@ -1176,7 +1657,9 @@ export class MemStorage implements IStorage {
     const gerencia = this.gerencias.get(departamento.gerenciaId);
     if (!gerencia) return undefined;
 
-    const evaluatedByUser = probationPeriod.evaluatedBy ? this.users.get(probationPeriod.evaluatedBy) : undefined;
+    const evaluatedByUser = probationPeriod.evaluatedBy
+      ? this.users.get(probationPeriod.evaluatedBy)
+      : undefined;
 
     return {
       ...probationPeriod,
@@ -1187,42 +1670,52 @@ export class MemStorage implements IStorage {
           ...cargo,
           departamento: {
             ...departamento,
-            gerencia
-          }
-        }
+            gerencia,
+          },
+        },
       },
-      evaluatedByUser
+      evaluatedByUser,
     };
   }
 
-  async getProbationPeriodsByEmployee(employeeId: string): Promise<ProbationPeriodWithRelations[]> {
+  async getProbationPeriodsByEmployee(
+    employeeId: string,
+  ): Promise<ProbationPeriodWithRelations[]> {
     const allProbationPeriods = await this.getProbationPeriods();
-    return allProbationPeriods.filter(pp => pp.employeeId === employeeId);
+    return allProbationPeriods.filter((pp) => pp.employeeId === employeeId);
   }
 
-  async createProbationPeriod(probationPeriodData: Omit<ProbationPeriod, 'id' | 'createdAt' | 'updatedAt'>): Promise<ProbationPeriod> {
+  async createProbationPeriod(
+    probationPeriodData: Omit<
+      ProbationPeriod,
+      "id" | "createdAt" | "updatedAt"
+    >,
+  ): Promise<ProbationPeriod> {
     const id = randomUUID();
     const now = new Date().toISOString() as any;
     const probationPeriod: ProbationPeriod = {
       id,
       ...probationPeriodData,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     this.probationPeriods.set(id, probationPeriod);
     return probationPeriod;
   }
 
-  async updateProbationPeriod(id: string, updates: Partial<ProbationPeriod>): Promise<ProbationPeriod | undefined> {
+  async updateProbationPeriod(
+    id: string,
+    updates: Partial<ProbationPeriod>,
+  ): Promise<ProbationPeriod | undefined> {
     const probationPeriod = this.probationPeriods.get(id);
     if (!probationPeriod) return undefined;
-    
+
     const updatedProbationPeriod: ProbationPeriod = {
       ...probationPeriod,
       ...updates,
       id: probationPeriod.id,
       createdAt: probationPeriod.createdAt,
-      updatedAt: new Date().toISOString() as any
+      updatedAt: new Date().toISOString() as any,
     };
     this.probationPeriods.set(id, updatedProbationPeriod);
     return updatedProbationPeriod;
@@ -1234,10 +1727,12 @@ export class MemStorage implements IStorage {
 
   async getExpiringProbationPeriods(): Promise<ProbationPeriodWithRelations[]> {
     const today = new Date();
-    const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
-    
+    const thirtyDaysFromNow = new Date(
+      today.getTime() + 30 * 24 * 60 * 60 * 1000,
+    );
+
     const allProbationPeriods = await this.getProbationPeriods();
-    return allProbationPeriods.filter(probationPeriod => {
+    return allProbationPeriods.filter((probationPeriod) => {
       if (probationPeriod.status !== "activo") return false;
       const endDate = new Date(probationPeriod.endDate);
       return endDate >= today && endDate <= thirtyDaysFromNow;
@@ -1246,9 +1741,11 @@ export class MemStorage implements IStorage {
 
   async getExpiringContracts(): Promise<Contract[]> {
     const today = new Date();
-    const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
-    
-    return Array.from(this.contracts.values()).filter(contract => {
+    const thirtyDaysFromNow = new Date(
+      today.getTime() + 30 * 24 * 60 * 60 * 1000,
+    );
+
+    return Array.from(this.contracts.values()).filter((contract) => {
       if (!contract.endDate || !contract.isActive) return false;
       const endDate = new Date(contract.endDate);
       return endDate >= today && endDate <= thirtyDaysFromNow;
@@ -1259,25 +1756,36 @@ export class MemStorage implements IStorage {
     const employees = await this.getEmployees();
     const contracts = await this.getContracts();
     const expiringContractsList = await this.getExpiringContracts();
-    
+
     const totalEmployees = employees.length;
-    const probationEmployees = employees.filter(e => e.status === "periodo_prueba").length;
+    const probationEmployees = employees.filter(
+      (e) => e.status === "periodo_prueba",
+    ).length;
     const totalContracts = contracts.length;
-    const activeContracts = contracts.filter(c => c.isActive).length;
-    const indefiniteContracts = contracts.filter(c => c.type === "indefinido").length;
+    const activeContracts = contracts.filter((c) => c.isActive).length;
+    const indefiniteContracts = contracts.filter(
+      (c) => c.type === "indefinido",
+    ).length;
     const expiringContracts = expiringContractsList.length;
-    
+
     // Mock data for demo
     const newCandidates = 15;
 
     const candidates = await this.getCandidates();
     const totalCandidates = candidates.length;
-    const candidatesInEvaluation = candidates.filter(c => c.status === "en_evaluacion").length;
-    const approvedCandidates = candidates.filter(c => c.status === "aprobado").length;
+    const candidatesInEvaluation = candidates.filter(
+      (c) => c.status === "en_evaluacion",
+    ).length;
+    const approvedCandidates = candidates.filter(
+      (c) => c.status === "aprobado",
+    ).length;
 
     const probationPeriods = await this.getProbationPeriods();
-    const activeProbationPeriods = probationPeriods.filter(pp => pp.status === "activo").length;
-    const expiringProbationPeriods = (await this.getExpiringProbationPeriods()).length;
+    const activeProbationPeriods = probationPeriods.filter(
+      (pp) => pp.status === "activo",
+    ).length;
+    const expiringProbationPeriods = (await this.getExpiringProbationPeriods())
+      .length;
 
     return {
       totalEmployees,
@@ -1291,78 +1799,89 @@ export class MemStorage implements IStorage {
       candidatesInEvaluation,
       approvedCandidates,
       activeProbationPeriods,
-      expiringProbationPeriods
+      expiringProbationPeriods,
     };
   }
 
   // Egresos methods
   async getEgresos(): Promise<EgresoWithRelations[]> {
     const allEgresos: EgresoWithRelations[] = [];
-    
+
     for (const egreso of this.egresos.values()) {
       const employee = await this.getEmployee(egreso.employeeId);
       const solicitadoPorUser = await this.getUser(egreso.solicitadoPor);
-      const aprobadoPorUser = egreso.aprobadoPor ? await this.getUser(egreso.aprobadoPor) : undefined;
-      
+      const aprobadoPorUser = egreso.aprobadoPor
+        ? await this.getUser(egreso.aprobadoPor)
+        : undefined;
+
       if (employee && solicitadoPorUser) {
         allEgresos.push({
           ...egreso,
           employee,
           solicitadoPorUser,
-          aprobadoPorUser
+          aprobadoPorUser,
         });
       }
     }
-    
+
     return allEgresos;
   }
 
   async getEgreso(id: string): Promise<EgresoWithRelations | undefined> {
     const egreso = this.egresos.get(id);
     if (!egreso) return undefined;
-    
+
     const employee = await this.getEmployee(egreso.employeeId);
     const solicitadoPorUser = await this.getUser(egreso.solicitadoPor);
-    const aprobadoPorUser = egreso.aprobadoPor ? await this.getUser(egreso.aprobadoPor) : undefined;
-    
+    const aprobadoPorUser = egreso.aprobadoPor
+      ? await this.getUser(egreso.aprobadoPor)
+      : undefined;
+
     if (!employee || !solicitadoPorUser) return undefined;
-    
+
     return {
       ...egreso,
       employee,
       solicitadoPorUser,
-      aprobadoPorUser
+      aprobadoPorUser,
     };
   }
 
-  async getEgresosByEmployee(employeeId: string): Promise<EgresoWithRelations[]> {
+  async getEgresosByEmployee(
+    employeeId: string,
+  ): Promise<EgresoWithRelations[]> {
     const allEgresos = await this.getEgresos();
-    return allEgresos.filter(egreso => egreso.employeeId === employeeId);
+    return allEgresos.filter((egreso) => egreso.employeeId === employeeId);
   }
 
-  async createEgreso(egresoData: Omit<Egreso, 'id' | 'createdAt' | 'updatedAt'>): Promise<Egreso> {
+  async createEgreso(
+    egresoData: Omit<Egreso, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Egreso> {
     const id = randomUUID();
     const now = new Date().toISOString() as any;
     const egreso: Egreso = {
       id,
       ...egresoData,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     this.egresos.set(id, egreso);
     return egreso;
   }
 
-  async updateEgreso(id: string, updates: Partial<Egreso>): Promise<Egreso | undefined> {
+  async updateEgreso(
+    id: string,
+    updates: Partial<Egreso>,
+  ): Promise<Egreso | undefined> {
     const egreso = this.egresos.get(id);
     if (!egreso) return undefined;
-    
+
     const updatedEgreso: Egreso = {
       ...egreso,
       ...updates,
       id: egreso.id,
       createdAt: egreso.createdAt,
-      updatedAt: new Date().toISOString() as any
+      updatedAt: new Date().toISOString() as any,
     };
     this.egresos.set(id, updatedEgreso);
     return updatedEgreso;
@@ -1375,20 +1894,23 @@ export class MemStorage implements IStorage {
   // Job Offers methods
   async getJobOffers(): Promise<JobOfferWithRelations[]> {
     const allJobOffers: JobOfferWithRelations[] = [];
-    
+
     for (const jobOffer of this.jobOffers.values()) {
       const cargo = this.cargos.get(jobOffer.cargoId);
       const creadoPorUser = await this.getUser(jobOffer.creadoPor);
-      const supervisorAsignadoUser = jobOffer.supervisorAsignado ? await this.getUser(jobOffer.supervisorAsignado) : undefined;
-      
+      const supervisorAsignadoUser = jobOffer.supervisorAsignado
+        ? await this.getUser(jobOffer.supervisorAsignado)
+        : undefined;
+
       if (cargo && creadoPorUser) {
         const departamento = this.departamentos.get(cargo.departamentoId);
         if (departamento) {
           const gerencia = this.gerencias.get(departamento.gerenciaId);
           if (gerencia) {
             // Calculate applications count
-            const applicationsCount = Array.from(this.jobApplications.values())
-              .filter(app => app.jobOfferId === jobOffer.id).length;
+            const applicationsCount = Array.from(
+              this.jobApplications.values(),
+            ).filter((app) => app.jobOfferId === jobOffer.id).length;
 
             allJobOffers.push({
               ...jobOffer,
@@ -1396,78 +1918,86 @@ export class MemStorage implements IStorage {
                 ...cargo,
                 departamento: {
                   ...departamento,
-                  gerencia
-                }
+                  gerencia,
+                },
               },
               creadoPorUser,
               supervisorAsignadoUser,
-              applicationsCount
+              applicationsCount,
             });
           }
         }
       }
     }
-    
+
     return allJobOffers;
   }
 
   async getJobOffer(id: string): Promise<JobOfferWithRelations | undefined> {
     const jobOffer = this.jobOffers.get(id);
     if (!jobOffer) return undefined;
-    
+
     const cargo = this.cargos.get(jobOffer.cargoId);
     const creadoPorUser = await this.getUser(jobOffer.creadoPor);
-    const supervisorAsignadoUser = jobOffer.supervisorAsignado ? await this.getUser(jobOffer.supervisorAsignado) : undefined;
-    
+    const supervisorAsignadoUser = jobOffer.supervisorAsignado
+      ? await this.getUser(jobOffer.supervisorAsignado)
+      : undefined;
+
     if (!cargo || !creadoPorUser) return undefined;
-    
+
     const departamento = this.departamentos.get(cargo.departamentoId);
     if (!departamento) return undefined;
-    
+
     const gerencia = this.gerencias.get(departamento.gerenciaId);
     if (!gerencia) return undefined;
-    
-    const applicationsCount = Array.from(this.jobApplications.values())
-      .filter(app => app.jobOfferId === jobOffer.id).length;
-    
+
+    const applicationsCount = Array.from(this.jobApplications.values()).filter(
+      (app) => app.jobOfferId === jobOffer.id,
+    ).length;
+
     return {
       ...jobOffer,
       cargo: {
         ...cargo,
         departamento: {
           ...departamento,
-          gerencia
-        }
+          gerencia,
+        },
       },
       creadoPorUser,
       supervisorAsignadoUser,
-      applicationsCount
+      applicationsCount,
     };
   }
 
-  async createJobOffer(jobOfferData: Omit<JobOffer, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobOffer> {
+  async createJobOffer(
+    jobOfferData: Omit<JobOffer, "id" | "createdAt" | "updatedAt">,
+  ): Promise<JobOffer> {
     const id = randomUUID();
     const now = new Date().toISOString() as any;
     const jobOffer: JobOffer = {
       id,
       ...jobOfferData,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     this.jobOffers.set(id, jobOffer);
     return jobOffer;
   }
 
-  async updateJobOffer(id: string, updates: Partial<JobOffer>): Promise<JobOffer | undefined> {
+  async updateJobOffer(
+    id: string,
+    updates: Partial<JobOffer>,
+  ): Promise<JobOffer | undefined> {
     const jobOffer = this.jobOffers.get(id);
     if (!jobOffer) return undefined;
-    
+
     const updatedJobOffer: JobOffer = {
       ...jobOffer,
       ...updates,
       id: jobOffer.id,
       createdAt: jobOffer.createdAt,
-      updatedAt: new Date().toISOString() as any
+      updatedAt: new Date().toISOString() as any,
     };
     this.jobOffers.set(id, updatedJobOffer);
     return updatedJobOffer;
@@ -1480,80 +2010,99 @@ export class MemStorage implements IStorage {
   // Job Applications methods
   async getJobApplications(): Promise<JobApplicationWithRelations[]> {
     const allApplications: JobApplicationWithRelations[] = [];
-    
+
     for (const application of this.jobApplications.values()) {
       const jobOffer = await this.getJobOffer(application.jobOfferId);
       const candidate = this.candidates.get(application.candidateId);
-      const entrevistadoPorUser = application.entrevistadoPor ? await this.getUser(application.entrevistadoPor) : undefined;
-      const evaluadoPorUser = application.evaluadoPor ? await this.getUser(application.evaluadoPor) : undefined;
-      
+      const entrevistadoPorUser = application.entrevistadoPor
+        ? await this.getUser(application.entrevistadoPor)
+        : undefined;
+      const evaluadoPorUser = application.evaluadoPor
+        ? await this.getUser(application.evaluadoPor)
+        : undefined;
+
       if (jobOffer && candidate) {
         allApplications.push({
           ...application,
           jobOffer,
           candidate,
           entrevistadoPorUser,
-          evaluadoPorUser
+          evaluadoPorUser,
         });
       }
     }
-    
+
     return allApplications;
   }
 
-  async getJobApplication(id: string): Promise<JobApplicationWithRelations | undefined> {
+  async getJobApplication(
+    id: string,
+  ): Promise<JobApplicationWithRelations | undefined> {
     const application = this.jobApplications.get(id);
     if (!application) return undefined;
-    
+
     const jobOffer = await this.getJobOffer(application.jobOfferId);
     const candidate = this.candidates.get(application.candidateId);
-    const entrevistadoPorUser = application.entrevistadoPor ? await this.getUser(application.entrevistadoPor) : undefined;
-    const evaluadoPorUser = application.evaluadoPor ? await this.getUser(application.evaluadoPor) : undefined;
-    
+    const entrevistadoPorUser = application.entrevistadoPor
+      ? await this.getUser(application.entrevistadoPor)
+      : undefined;
+    const evaluadoPorUser = application.evaluadoPor
+      ? await this.getUser(application.evaluadoPor)
+      : undefined;
+
     if (!jobOffer || !candidate) return undefined;
-    
+
     return {
       ...application,
       jobOffer,
       candidate,
       entrevistadoPorUser,
-      evaluadoPorUser
+      evaluadoPorUser,
     };
   }
 
-  async getJobApplicationsByOffer(jobOfferId: string): Promise<JobApplicationWithRelations[]> {
+  async getJobApplicationsByOffer(
+    jobOfferId: string,
+  ): Promise<JobApplicationWithRelations[]> {
     const allApplications = await this.getJobApplications();
-    return allApplications.filter(app => app.jobOfferId === jobOfferId);
+    return allApplications.filter((app) => app.jobOfferId === jobOfferId);
   }
 
-  async getJobApplicationsByCandidate(candidateId: string): Promise<JobApplicationWithRelations[]> {
+  async getJobApplicationsByCandidate(
+    candidateId: string,
+  ): Promise<JobApplicationWithRelations[]> {
     const allApplications = await this.getJobApplications();
-    return allApplications.filter(app => app.candidateId === candidateId);
+    return allApplications.filter((app) => app.candidateId === candidateId);
   }
 
-  async createJobApplication(applicationData: Omit<JobApplication, 'id' | 'createdAt' | 'updatedAt'>): Promise<JobApplication> {
+  async createJobApplication(
+    applicationData: Omit<JobApplication, "id" | "createdAt" | "updatedAt">,
+  ): Promise<JobApplication> {
     const id = randomUUID();
     const now = new Date().toISOString() as any;
     const application: JobApplication = {
       id,
       ...applicationData,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
     };
     this.jobApplications.set(id, application);
     return application;
   }
 
-  async updateJobApplication(id: string, updates: Partial<JobApplication>): Promise<JobApplication | undefined> {
+  async updateJobApplication(
+    id: string,
+    updates: Partial<JobApplication>,
+  ): Promise<JobApplication | undefined> {
     const application = this.jobApplications.get(id);
     if (!application) return undefined;
-    
+
     const updatedApplication: JobApplication = {
       ...application,
       ...updates,
       id: application.id,
       createdAt: application.createdAt,
-      updatedAt: new Date().toISOString() as any
+      updatedAt: new Date().toISOString() as any,
     };
     this.jobApplications.set(id, updatedApplication);
     return updatedApplication;
@@ -1564,4 +2113,6 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = process.env.DATABASE_URL ? new PostgresStorage() : new MemStorage();
+export const storage = process.env.DATABASE_URL
+  ? new PostgresStorage()
+  : new MemStorage();

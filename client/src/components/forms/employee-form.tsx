@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { CascadingSelects } from "./cascading-selects";
+import { useQuery } from "@tanstack/react-query";
 import { employeeFormSchema, type EmployeeFormData } from "@/lib/validators";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { EmployeeWithRelations } from "@shared/schema";
+import { formatDate, formatDateForInput, calculateContractEndDate, validateContractDates } from "@/lib/date-utils";
 
 interface EmployeeFormProps {
   isOpen: boolean;
@@ -25,7 +26,36 @@ interface EmployeeFormProps {
 export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
+  // Queries para cargar datos organizacionales
+  const { data: gerencias = [] } = useQuery({
+    queryKey: ["/api/gerencias"]
+  });
+
+  const { data: allDepartamentos = [] } = useQuery({
+    queryKey: ["/api/departamentos"],
+    queryFn: async () => {
+      const requests = gerencias.map(g => 
+        fetch(`/api/departamentos/${g.id}`).then(r => r.json())
+      );
+      const responses = await Promise.all(requests);
+      return responses.flat();
+    },
+    enabled: gerencias.length > 0
+  });
+
+  const { data: allCargos = [] } = useQuery({
+    queryKey: ["/api/cargos"],
+    queryFn: async () => {
+      const requests = allDepartamentos.map(d => 
+        fetch(`/api/cargos/${d.id}`).then(r => r.json())
+      );
+      const responses = await Promise.all(requests);
+      return responses.flat();
+    },
+    enabled: allDepartamentos.length > 0
+  });
+
   const {
     register,
     handleSubmit,
@@ -49,6 +79,8 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
       status: "activo",
       role: "empleado",
       contractType: "indefinido",
+      contractStartDate: "",
+      contractEndDate: "",
       generateProbation: false
     }
   });
@@ -56,7 +88,7 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
   // Pre-cargar datos cuando se está editando
   React.useEffect(() => {
     if (employee && isOpen) {
-      reset({
+      const formData = {
         fullName: employee.fullName,
         cedula: employee.user.cedula,
         email: employee.email,
@@ -70,8 +102,17 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
         status: employee.status,
         role: employee.user.role,
         contractType: employee.contract?.type || "indefinido",
+        contractStartDate: employee.contract?.startDate || "",
+        contractEndDate: employee.contract?.endDate || "",
         generateProbation: false
-      });
+      };
+
+      reset(formData);
+
+      // Asegurar que los valores se setean correctamente para CascadingSelects
+      setValue("gerenciaId", employee.cargo.departamento.gerenciaId);
+      setValue("departamentoId", employee.cargo.departamentoId);
+      setValue("cargoId", employee.cargoId);
     } else if (!employee && isOpen) {
       reset({
         fullName: "",
@@ -87,12 +128,74 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
         status: "activo",
         role: "empleado",
         contractType: "indefinido",
+        contractStartDate: "",
+        contractEndDate: "",
         generateProbation: false
       });
     }
   }, [employee, isOpen, reset]);
 
   const watchedValues = watch();
+
+  // Función para obtener departamento y gerencia desde el cargo seleccionado
+  const getDepartamentoFromCargo = (cargoId: string) => {
+    const cargo = allCargos.find(c => c.id === cargoId);
+    return cargo ? allDepartamentos.find(d => d.id === cargo.departamentoId) : null;
+  };
+
+  const getGerenciaFromDepartamento = (departamentoId: string) => {
+    const departamento = allDepartamentos.find(d => d.id === departamentoId);
+    return departamento ? gerencias.find(g => g.id === departamento.gerenciaId) : null;
+  };
+
+  // Actualizar gerencia y departamento cuando cambie el cargo
+  React.useEffect(() => {
+    if (watchedValues.cargoId) {
+      const departamento = getDepartamentoFromCargo(watchedValues.cargoId);
+      if (departamento) {
+        setValue("departamentoId", departamento.id);
+        const gerencia = getGerenciaFromDepartamento(departamento.id);
+        if (gerencia) {
+          setValue("gerenciaId", gerencia.id);
+        }
+      }
+    }
+  }, [watchedValues.cargoId, allCargos, allDepartamentos, gerencias, setValue]);
+
+  // Efecto para calcular y validar fechas de contrato
+  React.useEffect(() => {
+    const { startDate, contractType, contractStartDate, contractEndDate } = watchedValues;
+
+    if (startDate && contractType !== "indefinido") {
+      // Calcular fecha de fin si no está definida o es anterior a la fecha de inicio
+      if (!contractStartDate) {
+        setValue("contractStartDate", startDate); // Si no hay fecha de inicio de contrato, usar fecha de ingreso
+      }
+
+      if (!contractEndDate || new Date(contractEndDate) < new Date(startDate)) {
+        const calculatedEndDate = calculateContractEndDate(startDate, contractType);
+        if (calculatedEndDate) {
+          setValue("contractEndDate", formatDateForInput(calculatedEndDate));
+        }
+      }
+    }
+
+    // Validar que la fecha de fin no sea anterior a la de inicio
+    if (watchedValues.contractStartDate && watchedValues.contractEndDate) {
+      const isValid = validateContractDates(watchedValues.contractStartDate, watchedValues.contractEndDate);
+      if (!isValid) {
+        toast({
+          title: "Error de fecha",
+          description: "La fecha de fin de contrato no puede ser anterior a la fecha de inicio.",
+          variant: "destructive"
+        });
+        // Opcionalmente, resetear la fecha de fin a un valor válido o dejar el campo en rojo
+        // setValue("contractEndDate", ""); // Ejemplo: resetear si es inválido
+      }
+    }
+
+  }, [watchedValues.startDate, watchedValues.contractType, watchedValues.contractStartDate, watchedValues.contractEndDate, setValue, toast]);
+
 
   const createEmployeeMutation = useMutation({
     mutationFn: async (data: EmployeeFormData) => {
@@ -175,7 +278,7 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
             {/* Personal Information */}
             <div className="space-y-4">
               <h3 className="font-medium text-foreground border-b pb-2">Información Personal</h3>
-              
+
               <div>
                 <Label htmlFor="cedula">Cédula de Identidad *</Label>
                 <Input
@@ -238,22 +341,51 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
             {/* Organizational Structure */}
             <div className="space-y-4">
               <h3 className="font-medium text-foreground border-b pb-2">Estructura Organizacional</h3>
-              
-              <CascadingSelects
-                onGerenciaChange={(value) => setValue("gerenciaId", value)}
-                onDepartamentoChange={(value) => setValue("departamentoId", value)}
-                onCargoChange={(value) => setValue("cargoId", value)}
-                values={{
-                  gerenciaId: watchedValues.gerenciaId,
-                  departamentoId: watchedValues.departamentoId,
-                  cargoId: watchedValues.cargoId
-                }}
-                errors={{
-                  gerenciaId: errors.gerenciaId?.message,
-                  departamentoId: errors.departamentoId?.message,
-                  cargoId: errors.cargoId?.message
-                }}
-              />
+
+              {/* Cargo - Campo principal */}
+              <div>
+                <Label htmlFor="cargo">Cargo *</Label>
+                <Select
+                  value={watchedValues.cargoId || ""}
+                  onValueChange={(value) => setValue("cargoId", value)}
+                >
+                  <SelectTrigger className={errors.cargoId ? "border-destructive" : ""}>
+                    <SelectValue placeholder="Seleccionar Cargo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {allCargos.map((cargo) => (
+                      <SelectItem key={cargo.id} value={cargo.id}>
+                        {cargo.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.cargoId && (
+                  <p className="text-sm text-destructive mt-1">{errors.cargoId.message}</p>
+                )}
+              </div>
+
+              {/* Departamento - Solo lectura, se actualiza automáticamente */}
+              <div>
+                <Label htmlFor="departamento">Departamento</Label>
+                <Input
+                  value={allDepartamentos.find(d => d.id === watchedValues.departamentoId)?.name || ""}
+                  readOnly
+                  className="bg-muted"
+                  placeholder="Se asigna automáticamente según el cargo"
+                />
+              </div>
+
+              {/* Gerencia - Solo lectura, se actualiza automáticamente */}
+              <div>
+                <Label htmlFor="gerencia">Gerencia</Label>
+                <Input
+                  value={gerencias.find(g => g.id === watchedValues.gerenciaId)?.name || ""}
+                  readOnly
+                  className="bg-muted"
+                  placeholder="Se asigna automáticamente según el cargo"
+                />
+              </div>
 
               <div>
                 <Label htmlFor="startDate">Fecha de Ingreso *</Label>
@@ -298,7 +430,14 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
                 <Label htmlFor="contractType">Tipo de Contrato *</Label>
                 <Select
                   value={watchedValues.contractType}
-                  onValueChange={(value: any) => setValue("contractType", value)}
+                  onValueChange={(value: any) => {
+                    setValue("contractType", value);
+                    // Limpiar fecha de fin si el contrato es indefinido
+                    if (value === "indefinido") {
+                      setValue("contractEndDate", "");
+                      setValue("contractStartDate", ""); // Limpiar también la fecha de inicio del contrato si es indefinido
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleccionar tipo" />
@@ -318,7 +457,12 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
                   id="contractStartDate"
                   type="date"
                   {...register("contractStartDate")}
+                  value={watchedValues.contractStartDate || ""}
+                  onChange={(e) => setValue("contractStartDate", e.target.value)}
                 />
+                {errors.contractStartDate && (
+                  <p className="text-sm text-destructive mt-1">{errors.contractStartDate.message}</p>
+                )}
               </div>
 
               <div>
@@ -327,8 +471,13 @@ export function EmployeeForm({ isOpen, onClose, employee }: EmployeeFormProps) {
                   id="contractEndDate"
                   type="date"
                   {...register("contractEndDate")}
+                  value={watchedValues.contractEndDate || ""}
+                  onChange={(e) => setValue("contractEndDate", e.target.value)}
                   disabled={watchedValues.contractType === "indefinido"}
                 />
+                {errors.contractEndDate && (
+                  <p className="text-sm text-destructive mt-1">{errors.contractEndDate.message}</p>
+                )}
               </div>
             </div>
 

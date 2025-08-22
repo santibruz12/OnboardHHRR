@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Search, Filter, FileText, Calendar, User, AlertCircle, Edit2, Trash2, Eye } from "lucide-react";
+import { Plus, Search, Filter, FileText, Calendar, User, AlertCircle, Edit2, Trash2, Eye, ArrowUpDown, ChevronUp, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +37,21 @@ const contractTypeColors = {
   obra: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300",
   pasantia: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
 };
+
+// Helper function to validate contract dates
+const validateContractDates = (startDate: string, endDate: string): boolean => {
+  if (!startDate || !endDate) return true; // If either date is missing, consider it valid for now
+  return new Date(endDate) >= new Date(startDate);
+};
+
+// Helper function to calculate default end date (90 days after start date)
+const getDefaultEndDate = (startDate: string): string => {
+  if (!startDate) return "";
+  const date = new Date(startDate);
+  date.setDate(date.getDate() + 90);
+  return formatDateForInput(date.toISOString());
+};
+
 
 function ContractForm({ contract, onClose }: { contract?: Contract; onClose: () => void }) {
   const { toast } = useToast();
@@ -97,9 +112,15 @@ function ContractForm({ contract, onClose }: { contract?: Contract; onClose: () 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.employeeId || !formData.type || !formData.startDate) {
-      toast({ title: "Por favor complete todos los campos requeridos", variant: "destructive" });
+
+    if (!formData.employeeId || !formData.startDate) {
+      toast({ title: "Por favor completa todos los campos requeridos", variant: "destructive" });
+      return;
+    }
+
+    // Validar fechas antes de enviar
+    if (formData.endDate && !validateContractDates(formData.startDate, formData.endDate)) {
+      toast({ title: "La fecha de fin no puede ser anterior a la fecha de inicio", variant: "destructive" });
       return;
     }
 
@@ -112,6 +133,20 @@ function ContractForm({ contract, onClose }: { contract?: Contract; onClose: () 
       updateMutation.mutate(data);
     } else {
       createMutation.mutate(data);
+    }
+  };
+
+  const handleStartDateChange = (date: string) => {
+    setFormData(prev => ({ ...prev, startDate: date }));
+    // If the contract is new or type is determined/obra, auto-calculate end date
+    if (!contract && (formData.type === "determinado" || formData.type === "obra")) {
+      setFormData(prev => ({ ...prev, endDate: getDefaultEndDate(date) }));
+    } else if (contract && (contract.type === "determinado" || contract.type === "obra")) {
+      // If editing and it's a determined/obra contract, ensure end date is at least 90 days from new start date
+      const newEndDate = getDefaultEndDate(date);
+      if (!formData.endDate || new Date(formData.endDate) < new Date(newEndDate)) {
+        setFormData(prev => ({ ...prev, endDate: newEndDate }));
+      }
     }
   };
 
@@ -151,7 +186,15 @@ function ContractForm({ contract, onClose }: { contract?: Contract; onClose: () 
           <Label htmlFor="type">Tipo de Contrato *</Label>
           <Select 
             value={formData.type} 
-            onValueChange={(value) => setFormData(prev => ({ ...prev, type: value as any }))}
+            onValueChange={(value) => {
+              setFormData(prev => ({ ...prev, type: value as any }));
+              // Auto-calculate end date if type changes to determined or obra
+              if (value === "determinado" || value === "obra") {
+                setFormData(prev => ({ ...prev, endDate: getDefaultEndDate(prev.startDate) }));
+              } else {
+                setFormData(prev => ({ ...prev, endDate: "" })); // Clear end date for other types
+              }
+            }}
             data-testid="select-contract-type"
           >
             <SelectTrigger>
@@ -171,7 +214,7 @@ function ContractForm({ contract, onClose }: { contract?: Contract; onClose: () 
           <Input
             type="date"
             value={formData.startDate}
-            onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
+            onChange={(e) => handleStartDateChange(e.target.value)}
             data-testid="input-start-date"
           />
         </div>
@@ -181,7 +224,14 @@ function ContractForm({ contract, onClose }: { contract?: Contract; onClose: () 
           <Input
             type="date"
             value={formData.endDate}
-            onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
+            onChange={(e) => {
+              setFormData(prev => ({ ...prev, endDate: e.target.value }));
+              // Ensure endDate is never before startDate
+              if (e.target.value && !validateContractDates(formData.startDate, e.target.value)) {
+                toast({ title: "La fecha de fin no puede ser anterior a la fecha de inicio", variant: "destructive" });
+                setFormData(prev => ({ ...prev, endDate: "" })); // Reset to empty if invalid
+              }
+            }}
             data-testid="input-end-date"
           />
         </div>
@@ -215,6 +265,23 @@ function ContractForm({ contract, onClose }: { contract?: Contract; onClose: () 
   );
 }
 
+// Helper function to calculate remaining days
+const calculateRemainingDays = (endDate: string | null): { days: number; status: "active" | "warning" | "expired" | "indefinite" } => {
+  if (!endDate) return { days: 0, status: "indefinite" };
+  
+  const today = new Date();
+  const end = new Date(endDate);
+  const diffTime = end.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) return { days: Math.abs(diffDays), status: "expired" };
+  if (diffDays <= 10) return { days: diffDays, status: "warning" };
+  return { days: diffDays, status: "active" };
+};
+
+type SortField = "employee" | "type" | "startDate" | "endDate" | "remainingDays" | "status";
+type SortDirection = "asc" | "desc";
+
 export default function Contracts() {
   const [searchTerm, setSearchTerm] = useState("");
   const [contractFilter, setContractFilter] = useState<string>("all");
@@ -222,6 +289,8 @@ export default function Contracts() {
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("employee");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const { toast } = useToast();
 
   const { data: contracts = [], isLoading } = useQuery<ContractWithEmployee[]>({
@@ -229,7 +298,7 @@ export default function Contracts() {
   });
 
   const { data: employees = [] } = useQuery<Employee[]>({
-    queryKey: ["/api/employees"]
+    queryKey: ["/api/employees"],
   });
 
   const { data: expiringContracts = [] } = useQuery<Contract[]>({
@@ -254,18 +323,74 @@ export default function Contracts() {
     }
   });
 
-  // Filter contracts - they already have employee data from the backend
-  const filteredContracts = contracts.filter(contract => {
-    const matchesSearch = contract.employee?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         contractTypeLabels[contract.type].toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesType = contractFilter === "all" || contract.type === contractFilter;
-    const matchesStatus = statusFilter === "all" || 
-                         (statusFilter === "active" && contract.isActive) ||
-                         (statusFilter === "inactive" && !contract.isActive);
-    
-    return matchesSearch && matchesType && matchesStatus;
-  });
+  // Handle sorting
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  // Get sort icon
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="w-4 h-4" />;
+    return sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />;
+  };
+
+  // Filter and sort contracts
+  const filteredAndSortedContracts = contracts
+    .filter(contract => {
+      const matchesSearch = contract.employee?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           contractTypeLabels[contract.type].toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesType = contractFilter === "all" || contract.type === contractFilter;
+      const matchesStatus = statusFilter === "all" || 
+                           (statusFilter === "active" && contract.isActive) ||
+                           (statusFilter === "inactive" && !contract.isActive);
+
+      return matchesSearch && matchesType && matchesStatus;
+    })
+    .sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case "employee":
+          aValue = a.employee?.fullName || "Sin empleado";
+          bValue = b.employee?.fullName || "Sin empleado";
+          break;
+        case "type":
+          aValue = contractTypeLabels[a.type];
+          bValue = contractTypeLabels[b.type];
+          break;
+        case "startDate":
+          aValue = new Date(a.startDate);
+          bValue = new Date(b.startDate);
+          break;
+        case "endDate":
+          aValue = a.endDate ? new Date(a.endDate) : new Date("9999-12-31");
+          bValue = b.endDate ? new Date(b.endDate) : new Date("9999-12-31");
+          break;
+        case "remainingDays":
+          aValue = calculateRemainingDays(a.endDate).days;
+          bValue = calculateRemainingDays(b.endDate).days;
+          break;
+        case "status":
+          aValue = a.isActive ? "Activo" : "Inactivo";
+          bValue = b.isActive ? "Activo" : "Inactivo";
+          break;
+        default:
+          return 0;
+      }
+
+      if (sortDirection === "asc") {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
 
   const formatContractDate = (date: string | null) => {
     if (!date) return "Sin fecha";
@@ -382,7 +507,7 @@ export default function Contracts() {
                 data-testid="input-search-contracts"
               />
             </div>
-            
+
             <Select value={contractFilter} onValueChange={setContractFilter}>
               <SelectTrigger className="w-full sm:w-48" data-testid="select-filter-type">
                 <SelectValue placeholder="Tipo de contrato" />
@@ -414,7 +539,7 @@ export default function Contracts() {
         <CardHeader>
           <CardTitle>Lista de Contratos</CardTitle>
           <CardDescription>
-            {filteredContracts.length} de {contracts.length} contrato(s)
+            {filteredAndSortedContracts.length} de {contracts.length} contrato(s)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -422,73 +547,151 @@ export default function Contracts() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Empleado</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Fecha Inicio</TableHead>
-                  <TableHead>Fecha Fin</TableHead>
-                  <TableHead>Estado</TableHead>
+                  <TableHead>
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-semibold"
+                      onClick={() => handleSort("employee")}
+                    >
+                      Empleado
+                      {getSortIcon("employee")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-semibold"
+                      onClick={() => handleSort("type")}
+                    >
+                      Tipo
+                      {getSortIcon("type")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-semibold"
+                      onClick={() => handleSort("startDate")}
+                    >
+                      Fecha Inicio
+                      {getSortIcon("startDate")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-semibold"
+                      onClick={() => handleSort("endDate")}
+                    >
+                      Fecha Fin
+                      {getSortIcon("endDate")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-semibold"
+                      onClick={() => handleSort("remainingDays")}
+                    >
+                      Días Restantes
+                      {getSortIcon("remainingDays")}
+                    </Button>
+                  </TableHead>
+                  <TableHead>
+                    <Button 
+                      variant="ghost" 
+                      className="h-auto p-0 font-semibold"
+                      onClick={() => handleSort("status")}
+                    >
+                      Estado
+                      {getSortIcon("status")}
+                    </Button>
+                  </TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredContracts.map((contract) => (
-                  <TableRow key={contract.id} data-testid={`row-contract-${contract.id}`}>
-                    <TableCell>
-                      <div className="font-medium">{contract.employee?.fullName || "Sin empleado"}</div>
-                      <div className="text-sm text-muted-foreground">{contract.employee?.email || ""}</div>
-                      {contract.employee?.cargo?.name && (
-                        <div className="text-xs text-muted-foreground">{contract.employee.cargo.name}</div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={contractTypeColors[contract.type]}>
-                        {contractTypeLabels[contract.type]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatContractDate(contract.startDate)}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <span>{formatContractDate(contract.endDate)}</span>
-                        {isExpiringSoon(contract) && (
-                          <AlertCircle className="w-4 h-4 text-orange-500" />
+                {filteredAndSortedContracts.map((contract) => {
+                  const remainingInfo = calculateRemainingDays(contract.endDate);
+                  
+                  return (
+                    <TableRow key={contract.id} data-testid={`row-contract-${contract.id}`}>
+                      <TableCell>
+                        <div className="font-medium">{contract.employee?.fullName || "Sin empleado"}</div>
+                        <div className="text-sm text-muted-foreground">{contract.employee?.email || ""}</div>
+                        {contract.employee?.cargo?.name && (
+                          <div className="text-xs text-muted-foreground">{contract.employee.cargo.name}</div>
                         )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={contract.isActive ? "default" : "secondary"}>
-                        {contract.isActive ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedContract(contract);
-                            setShowEditDialog(true);
-                          }}
-                          data-testid={`button-edit-${contract.id}`}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteMutation.mutate(contract.id)}
-                          disabled={deleteMutation.isPending}
-                          data-testid={`button-delete-${contract.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={contractTypeColors[contract.type]}>
+                          {contractTypeLabels[contract.type]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{formatContractDate(contract.startDate)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span>{formatContractDate(contract.endDate)}</span>
+                          {isExpiringSoon(contract) && (
+                            <AlertCircle className="w-4 h-4 text-orange-500" />
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {remainingInfo.status === "indefinite" ? (
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                            Indefinido
+                          </Badge>
+                        ) : remainingInfo.status === "expired" ? (
+                          <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                            Vencido hace {remainingInfo.days} día{remainingInfo.days !== 1 ? 's' : ''}
+                          </Badge>
+                        ) : remainingInfo.status === "warning" ? (
+                          <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                            {remainingInfo.days} día{remainingInfo.days !== 1 ? 's' : ''} restante{remainingInfo.days !== 1 ? 's' : ''}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                            {remainingInfo.days} día{remainingInfo.days !== 1 ? 's' : ''} restante{remainingInfo.days !== 1 ? 's' : ''}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={contract.isActive && remainingInfo.status !== "expired" ? "default" : "secondary"}>
+                          {remainingInfo.status === "expired" ? "Vencido" : contract.isActive ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedContract(contract);
+                              setShowEditDialog(true);
+                            }}
+                            data-testid={`button-edit-${contract.id}`}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteMutation.mutate(contract.id)}
+                            disabled={deleteMutation.isPending}
+                            data-testid={`button-delete-${contract.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
 
-            {filteredContracts.length === 0 && (
+            {filteredAndSortedContracts.length === 0 && (
               <div className="text-center py-8 text-muted-foreground" data-testid="text-no-contracts">
                 No se encontraron contratos que coincidan con los filtros
               </div>

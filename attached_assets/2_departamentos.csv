@@ -1,0 +1,19 @@
+ID,Nombre,Descripción,Gerencia ID,Jefe ID,Es Activo,Fecha Creación
+f994bbd2-8cd8-49ee-8fb7-5c2b0865503b,Desarrollo de Software,,fa41b046-cf7b-48b2-8753-e51a9a978228,,TRUE,2024-01-15
+3b60f6fb-5839-41d6-aa41-8544e464b537,Infraestructura IT,,fa41b046-cf7b-48b2-8753-e51a9a978228,,TRUE,2024-01-15
+417fc7bd-00dc-48e8-a0c9-bc0dff18b08b,Soporte Técnico,,fa41b046-cf7b-48b2-8753-e51a9a978228,,TRUE,2024-01-15
+df116af5-4422-4395-8806-db617ff3f73a,Ciberseguridad,,fa41b046-cf7b-48b2-8753-e51a9a978228,,TRUE,2024-01-15
+59a7b5b4-7832-4d96-af97-cbf36d18b684,Reclutamiento,,8a15ae8e-3a14-443c-bea9-f604c19b8d7a,,TRUE,2024-01-15
+724f492f-d11f-4f16-8d26-3521bdb36b9d,Desarrollo Organizacional,,8a15ae8e-3a14-443c-bea9-f604c19b8d7a,,TRUE,2024-01-15
+8e5c2b9f-1a4d-4c7e-9f2a-5d8e1b4c7e0a,Compensaciones,,8a15ae8e-3a14-443c-bea9-f604c19b8d7a,,TRUE,2024-01-15
+9f6d3c0a-2b5e-5d8f-a03b-6e9f2c5d8f1b,Ventas Corporativas,,7920fe52-cde1-4820-8da7-556ea896a7c1,,TRUE,2024-01-15
+a07e4d1b-3c6f-6e9a-b14c-7f0a3d6e9a2c,Marketing Digital,,7920fe52-cde1-4820-8da7-556ea896a7c1,,TRUE,2024-01-15
+b18f5e2c-4d7a-7f0b-c25d-80b4e7f0b3d,Atención al Cliente,,7920fe52-cde1-4820-8da7-556ea896a7c1,,TRUE,2024-01-15
+c290f6d3-5e8b-801c-d36e-91c5f801c4e,Producción,,b2d5a8c3-4e1f-4923-9d6b-2c8e7a5b3f9d,,TRUE,2024-01-15
+d3a107e4-6f9c-912d-e47f-a2d6092d5f,Logística,,b2d5a8c3-4e1f-4923-9d6b-2c8e7a5b3f9d,,TRUE,2024-01-15
+e4b218f5-70ad-a23e-f580-b3e71a3e60,Mantenimiento,,b2d5a8c3-4e1f-4923-9d6b-2c8e7a5b3f9d,,TRUE,2024-01-15
+f5c329a6-81be-b34f-0691-c4f82b4f71,Contabilidad,,c3e6b9d4-5f2e-5a34-ae7c-3d9f8b6c4e0a,,TRUE,2024-01-15
+061d43ab7-92cf-c450-17a2-d50935082,Finanzas,,c3e6b9d4-5f2e-5a34-ae7c-3d9f8b6c4e0a,,TRUE,2024-01-15
+172e54bc8-a3d0-d561-28b3-e61a46193,Compras,,c3e6b9d4-5f2e-5a34-ae7c-3d9f8b6c4e0a,,TRUE,2024-01-15
+283f65cd9-b4e1-e672-39c4-f72b572a4,Control de Calidad,,d4f7c0e5-6e3f-6b45-bf8d-4ea0c7d5f1b,,TRUE,2024-01-15
+394076dea-c5f2-f783-4ad5-083c683b5,Mejora Continua,,d4f7c0e5-6e3f-6b45-bf8d-4ea0c7d5f1b,,TRUE,2024-01-15

@@ -336,6 +336,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/contracts/expiring-soon", requireAuth, async (req, res) => {
+    try {
+      const contracts = await storage.getExpiringContracts();
+      res.json(contracts);
+    } catch (error) {
+      console.error("[GET_EXPIRING_CONTRACTS_ERROR]", error);
+      res.status(500).json({ error: "Error al obtener contratos por vencer" });
+    }
+  });
+
   app.get("/api/contracts/:id", requireAuth, async (req, res) => {
     try {
       const contract = await storage.getContract(req.params.id);
@@ -346,16 +356,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("[GET_CONTRACT_ERROR]", error);
       res.status(500).json({ error: "Error al obtener contrato" });
-    }
-  });
-
-  app.get("/api/contracts/expiring-soon", requireAuth, async (req, res) => {
-    try {
-      const contracts = await storage.getExpiringContracts();
-      res.json(contracts);
-    } catch (error) {
-      console.error("[GET_EXPIRING_CONTRACTS_ERROR]", error);
-      res.status(500).json({ error: "Error al obtener contratos por vencer" });
     }
   });
 

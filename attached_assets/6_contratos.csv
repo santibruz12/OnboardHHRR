@@ -1,0 +1,11 @@
+ID,Empleado ID,Tipo Contrato,Fecha Inicio,Fecha Fin,Salario,Cláusulas Especiales,Estado,Creado Por,Fecha Creación
+1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p,c2054fd7-a60c-41b6-bb84-1c8b4627f244,indefinido,2022-03-01,,55000,Bonificación por liderazgo técnico,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-20
+2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q,d3165ae8-b71d-52c7-cc95-2d9c5738e355,indefinido,2020-07-15,,45000,Comisión por ventas,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-20
+3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r,e427fbf9-c82e-63d8-dda6-3e0d6849f466,indefinido,2021-01-20,,28000,,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-20
+4d5e6f7g-8h9i-0j1k-2l3m-4n5o6p7q8r9s,f5390c0a-d93f-74e9-eeb7-4f1e795af577,indefinido,2019-11-08,,40000,Bono de producción,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-20
+5e6f7g8h-9i0j-1k2l-3m4n-5o6p7q8r9s0t,064a1d1b-ea40-85fa-ffc8-502e896b0688,indefinido,2023-02-14,,45000,,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-20
+6f7g8h9i-0j1k-2l3m-4n5o-6p7q8r9s0t1u,175b2e2c-fb51-960b-00d9-613f9a7c1799,determinado,2024-06-01,2025-06-01,25000,Periodo de prueba 6 meses,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-22
+7g8h9i0j-1k2l-3m4n-5o6p-7q8r9s0t1u2v,286c3f3d-0c62-a71c-11ea-724008d28aa,indefinido,2021-09-12,,35000,,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-22
+8h9i0j1k-2l3m-4n5o-6p7q-8r9s0t1u2v3w,397d404e-1d73-b82d-22fb-8351199399bb,determinado,2024-04-15,2025-04-15,38000,Periodo de prueba 3 meses,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-22
+9i0j1k2l-3m4n-5o6p-7q8r-9s0t1u2v3w4x,4a8e515f-2e84-c93e-33fc-94622aa4aacc,indefinido,2022-12-01,,30000,,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-25
+0j1k2l3m-4n5o-6p7q-8r9s-0t1u2v3w4x5y,5b9f6260-3f95-da4f-4400-a573bbbbdd,indefinido,2023-08-20,,28000,,activo,c57560b3-17ac-4947-b2a3-0f2ea682a5b1,2024-01-25

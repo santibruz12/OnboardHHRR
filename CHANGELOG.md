@@ -16,6 +16,26 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Testing automatizado
 - Logs de auditoría detallados
 
+## [1.5.0] - 2025-01-16
+
+### Agregado
+- ✅ **Validadores avanzados de fechas de contrato** - Prevención de fechas de fin anteriores a fechas de inicio/ingreso
+- ✅ **Auto-cálculo de fechas de fin de contrato** - Cálculo automático de 90 días mínimos para contratos determinados y por obra
+- ✅ **Validación de fecha de inicio de contrato** - Prevención de fechas de inicio anteriores a fecha de ingreso del empleado
+- ✅ **Función addDays mejorada** - Cálculo preciso de fechas considerando meses con diferentes días
+
+### Mejorado
+- **Experiencia en formularios de empleados** - Auto-población inteligente de fechas con opción de edición manual
+- **Validación en tiempo real** - Retroalimentación inmediata durante entrada de datos
+- **Consistencia entre módulos** - Mismas validaciones aplicadas en empleados y contratos
+- **Manejo de contratos por obra** - Auto-cálculo específico para proyectos con duración definida
+
+### Técnico
+- Validaciones robustas con Zod que permiten campos vacíos durante edición
+- Lógica de auto-cálculo que respeta valores editados manualmente por el usuario
+- Mensajes de error específicos y útiles para guiar al usuario
+- Integración completa entre validaciones frontend y lógica de formularios
+
 ## [1.4.0] - 2025-01-15
 
 ### Agregado

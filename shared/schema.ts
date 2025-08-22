@@ -1,172 +1,108 @@
+import { pgTable, varchar, text, integer, boolean, timestamp, date, pgEnum } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp, boolean, date, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // Enums
-export const roleEnum = pgEnum("role", [
-  "admin",
-  "gerente_rrhh", 
-  "admin_rrhh",
-  "supervisor",
-  "empleado_captacion",
-  "empleado"
-]);
+export const userRoleEnum = pgEnum("user_role", ["admin", "rrhh", "supervisor", "employee"]);
+export const contractTypeEnum = pgEnum("contract_type", ["indefinido", "determinado", "temporal", "proyecto"]);
+export const contractStatusEnum = pgEnum("contract_status", ["activo", "inactivo", "suspendido", "terminado"]);
+export const candidateStatusEnum = pgEnum("candidate_status", ["en_evaluacion", "aprobado", "rechazado", "contratado"]);
+export const probationStatusEnum = pgEnum("probation_status", ["activo", "aprobado", "extension_requerida", "terminado"]);
+export const egresoMotivoEnum = pgEnum("egreso_motivo", ["renuncia", "despido", "mutual_acuerdo", "vencimiento_contrato", "jubilacion", "otro"]);
+export const egresoStatusEnum = pgEnum("egreso_status", ["solicitado", "en_proceso", "aprobado", "rechazado", "completado"]);
+export const jobOfferStatusEnum = pgEnum("job_offer_status", ["borrador", "publicada", "pausada", "cerrada", "cancelada"]);
+export const jobOfferPriorityEnum = pgEnum("job_offer_priority", ["baja", "media", "alta", "urgente"]);
+export const jobApplicationStatusEnum = pgEnum("job_application_status", ["postulado", "en_revision", "entrevistado", "seleccionado", "rechazado"]);
 
-export const contractTypeEnum = pgEnum("contract_type", [
-  "indefinido",
-  "determinado", 
-  "obra",
-  "pasantia"
-]);
-
-export const employeeStatusEnum = pgEnum("employee_status", [
-  "activo",
-  "inactivo",
-  "periodo_prueba"
-]);
-
-export const probationStatusEnum = pgEnum("probation_status", [
-  "activo",
-  "completado", 
-  "extendido",
-  "terminado"
-]);
-
-export const probationTypeEnum = pgEnum("probation_type", [
-  "nuevo_ingreso",
-  "movimiento_interno"
-]);
-
-export const candidateStatusEnum = pgEnum("candidate_status", [
-  "en_evaluacion",
-  "aprobado", 
-  "rechazado",
-  "contratado"
-]);
-
-export const egresoStatusEnum = pgEnum("egreso_status", [
-  "solicitado",
-  "en_revision",
-  "aprobado",
-  "rechazado",
-  "procesado",
-  "cancelado"
-]);
-
-export const egresoMotivoEnum = pgEnum("egreso_motivo", [
-  "renuncia_voluntaria",
-  "despido_causa_justificada",
-  "despido_sin_causa",
-  "jubilacion",
-  "vencimiento_contrato",
-  "periodo_prueba_no_superado",
-  "reestructuracion",
-  "abandono_trabajo",
-  "incapacidad_permanente",
-  "fallecimiento"
-]);
-
-export const jobOfferStatusEnum = pgEnum("job_offer_status", [
-  "borrador",
-  "publicada",
-  "pausada",
-  "cerrada",
-  "cancelada"
-]);
-
-export const jobOfferPriorityEnum = pgEnum("job_offer_priority", [
-  "baja",
-  "media",
-  "alta",
-  "urgente"
-]);
-
-export const jobApplicationStatusEnum = pgEnum("job_application_status", [
-  "postulado",
-  "en_revision",
-  "entrevista_inicial",
-  "entrevista_tecnica",
-  "entrevista_final",
-  "oferta_extendida",
-  "aceptado",
-  "rechazado",
-  "retirado"
-]);
-
-// Core Tables
+// Users table
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   cedula: varchar("cedula", { length: 12 }).notNull().unique(),
-  password: text("password").notNull(),
-  role: roleEnum("role").notNull().default("empleado"),
+  password: varchar("password", { length: 255 }).notNull(),
+  role: userRoleEnum("role").notNull().default("employee"),
   isActive: boolean("is_active").notNull().default(true),
+  lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
+// Gerencias (Management Areas)
 export const gerencias = pgTable("gerencias", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name", { length: 100 }).notNull(),
-  description: text("description"),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
+  gerenteId: varchar("gerente_id").references(() => users.id),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow()
 });
 
+// Departamentos
 export const departamentos = pgTable("departamentos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name", { length: 100 }).notNull(),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
   gerenciaId: varchar("gerencia_id").notNull().references(() => gerencias.id),
+  jefeId: varchar("jefe_id").references(() => users.id),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow()
 });
 
+// Cargos (Positions)
 export const cargos = pgTable("cargos", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: varchar("name", { length: 100 }).notNull(),
+  nombre: varchar("nombre", { length: 100 }).notNull(),
+  descripcion: text("descripcion"),
   departamentoId: varchar("departamento_id").notNull().references(() => departamentos.id),
+  salarioBase: integer("salario_base"),
+  nivelJerarquico: integer("nivel_jerarquico").notNull().default(1),
+  requiereSupervision: boolean("requiere_supervision").notNull().default(true),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow()
 });
 
+// Employees
 export const employees = pgTable("employees", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id),
-  fullName: varchar("full_name", { length: 200 }).notNull(),
-  email: varchar("email", { length: 150 }).notNull().unique(),
+  firstName: varchar("first_name", { length: 50 }).notNull(),
+  lastName: varchar("last_name", { length: 50 }).notNull(),
+  email: varchar("email", { length: 150 }).notNull(),
   phone: varchar("phone", { length: 20 }),
   birthDate: date("birth_date"),
+  hireDate: date("hire_date").notNull(),
   cargoId: varchar("cargo_id").notNull().references(() => cargos.id),
-  supervisorId: varchar("supervisor_id").references((): any => employees.id),
-  startDate: date("start_date").notNull(),
-  status: employeeStatusEnum("status").notNull().default("activo"),
+  supervisorId: varchar("supervisor_id").references(() => employees.id),
+  salario: integer("salario"),
+  isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow()
 });
 
+// Contracts
 export const contracts = pgTable("contracts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id),
-  type: contractTypeEnum("type").notNull(),
-  startDate: date("start_date").notNull(),
-  endDate: date("end_date"),
-  isActive: boolean("is_active").notNull().default(true),
+  tipoContrato: contractTypeEnum("tipo_contrato").notNull(),
+  fechaInicio: date("fecha_inicio").notNull(),
+  fechaFin: date("fecha_fin"),
+  salario: integer("salario").notNull(),
+  clausulasEspeciales: text("clausulas_especiales"),
+  status: contractStatusEnum("status").notNull().default("activo"),
+  creadoPor: varchar("creado_por").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow()
 });
 
-
-
+// Probation Periods
 export const probationPeriods = pgTable("probation_periods", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id),
-  type: probationTypeEnum("type").notNull().default("nuevo_ingreso"),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
-  status: probationStatusEnum("status").notNull().default("activo"),
-  evaluationNotes: text("evaluation_notes"),
-  finalEvaluation: text("final_evaluation"),
-  evaluatedBy: varchar("evaluated_by").references(() => users.id),
   evaluationDate: date("evaluation_date"),
-  extensionReason: text("extension_reason"),
-  extensionDate: date("extension_date"),
-  originalEndDate: date("original_end_date"),
+  evaluatedBy: varchar("evaluated_by").references(() => users.id),
+  status: probationStatusEnum("status").notNull().default("activo"),
+  performanceRating: integer("performance_rating"), // 1-5 scale
   supervisorRecommendation: text("supervisor_recommendation"),
   hrNotes: text("hr_notes"),
   approved: boolean("approved"),

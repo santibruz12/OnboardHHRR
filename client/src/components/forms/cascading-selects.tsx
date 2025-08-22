@@ -47,9 +47,22 @@ export function CascadingSelects({
     enabled: !!selectedDepartamento
   });
 
-  // Reset dependent selects when parent changes
+  // Pre-cargar valores cuando se están editando (para modo edición)
   useEffect(() => {
-    if (selectedGerencia !== values.gerenciaId) {
+    if (values.gerenciaId && values.gerenciaId !== selectedGerencia) {
+      setSelectedGerencia(values.gerenciaId);
+    }
+  }, [values.gerenciaId]);
+
+  useEffect(() => {
+    if (values.departamentoId && values.departamentoId !== selectedDepartamento) {
+      setSelectedDepartamento(values.departamentoId);
+    }
+  }, [values.departamentoId]);
+
+  // Reset dependent selects when parent changes (solo en modo creación)
+  useEffect(() => {
+    if (selectedGerencia !== values.gerenciaId && !values.gerenciaId) {
       setSelectedDepartamento("");
       onDepartamentoChange("");
       onCargoChange("");
@@ -57,7 +70,7 @@ export function CascadingSelects({
   }, [selectedGerencia, values.gerenciaId, onDepartamentoChange, onCargoChange]);
 
   useEffect(() => {
-    if (selectedDepartamento !== values.departamentoId) {
+    if (selectedDepartamento !== values.departamentoId && !values.departamentoId) {
       onCargoChange("");
     }
   }, [selectedDepartamento, values.departamentoId, onCargoChange]);

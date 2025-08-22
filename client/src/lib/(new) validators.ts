@@ -31,22 +31,41 @@ export const employeeFormSchema = z.object({
   // System fields
   role: z.enum(["admin", "gerente_rrhh", "admin_rrhh", "supervisor", "empleado_captacion", "empleado"]).default("empleado")
 }).refine((data) => {
-  // Validar que fecha de fin de contrato no sea anterior a fecha de inicio
-  if (data.contractEndDate && data.contractStartDate) {
-    const startDate = new Date(data.contractStartDate);
-    const endDate = new Date(data.contractEndDate);
-    return endDate >= startDate;
+  // Solo validar si contractEndDate tiene valor y hay una fecha de referencia
+  if (!data.contractEndDate) {
+    return true; // Permitir campo vacío durante edición
   }
-  // Si no hay contractStartDate, usar startDate como referencia
-  if (data.contractEndDate && data.startDate) {
-    const startDate = new Date(data.startDate);
-    const endDate = new Date(data.contractEndDate);
-    return endDate >= startDate;
+  
+  // No validar si no hay fecha de referencia disponible
+  if (!data.contractStartDate && !data.startDate) {
+    return true;
   }
-  return true;
+
+  const endDate = new Date(data.contractEndDate);
+  
+  // Priorizar contractStartDate sobre startDate como referencia
+  const referenceDate = data.contractStartDate 
+    ? new Date(data.contractStartDate)
+    : new Date(data.startDate);
+  
+  return endDate >= referenceDate;
 }, {
   message: "La fecha de fin del contrato no puede ser anterior a la fecha de inicio",
   path: ["contractEndDate"]
+})
+.refine((data) => {
+  // Validar que contractStartDate no sea anterior a startDate (fecha de ingreso)
+  if (!data.contractStartDate || !data.startDate) {
+    return true; // Permitir campos vacíos durante edición
+  }
+  
+  const ingressDate = new Date(data.startDate);
+  const contractStart = new Date(data.contractStartDate);
+  
+  return contractStart >= ingressDate;
+}, {
+  message: "La fecha de inicio del contrato no puede ser anterior a la fecha de ingreso",
+  path: ["contractStartDate"]
 });
 
 export type EmployeeFormData = z.infer<typeof employeeFormSchema>;

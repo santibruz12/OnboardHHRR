@@ -46,7 +46,7 @@ export function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
 
   const createCandidateMutation = useMutation({
     mutationFn: (data: CandidateFormData) =>
-      apiRequest("/api/candidates", "POST", {
+      apiRequest("POST", "/api/candidates", {
         cedula: data.cedula,
         fullName: data.fullName,
         email: data.email,
@@ -76,7 +76,7 @@ export function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
 
   const updateCandidateMutation = useMutation({
     mutationFn: (data: CandidateFormData) =>
-      apiRequest(`/api/candidates/${candidate!.id}`, "PUT", {
+      apiRequest("PUT", `/api/candidates/${candidate!.id}`, {
         cedula: data.cedula,
         fullName: data.fullName,
         email: data.email,

@@ -1,0 +1,157 @@
+Especificaciones para Generación de Datos de Prueba - Sistema RRHH
+Estructura Organizacional
+Gerencias (5 total)
+
+Recursos Humanos (Administrativa)
+Finanzas y Contabilidad (Administrativa)
+Operaciones (Operativa)
+Logística y Distribución (Operativa)
+Tecnología e Informática (Administrativa)
+
+Departamentos (10 total - 2 por gerencia)
+Recursos Humanos:
+
+Administración de Personal
+Reclutamiento y Selección
+
+Finanzas y Contabilidad:
+
+Contabilidad General
+Tesorería y Cobranzas
+
+Operaciones:
+
+Producción
+Control de Calidad
+
+Logística y Distribución:
+
+Almacén y Inventario
+Transporte y Distribución
+
+Tecnología e Informática:
+
+Desarrollo de Sistemas
+Soporte Técnico
+
+Especificaciones de Empleados (50 total)
+Distribución por Área
+
+Áreas Administrativas (30 empleados): RRHH (10), Finanzas (10), Tecnología (10)
+Áreas Operativas (20 empleados): Operaciones (10), Logística (10)
+
+Tipos de Contrato por Área
+
+Administrativas: Contrato tiempo indeterminado
+Operativas: Contrato obra determinada (90 días cada uno)
+
+Cronología de Incorporaciones
+Período de Incorporación
+
+Fecha actual: Agosto 2025
+Rango temporal: Últimos 18 meses (desde febrero 2024 hasta agosto 2025)
+Distribución: Incorporaciones distribuidas uniformemente, evitando fechas idénticas
+
+Historiales de Contrato Específicos
+Empleados con Renovaciones (12 empleados operativos)
+
+6 empleados con 1 renovación (2 contratos total: inicial + 1 renovación)
+6 empleados con 2 renovaciones (3 contratos total: inicial + 2 renovaciones)
+Cada contrato de 90 días exactos
+Renovaciones consecutivas: nuevo contrato inicia el día siguiente al vencimiento del anterior
+
+Empleados con Ascensos/Cambios de Área (3 empleados)
+
+Empleado 1: Operaciones → RRHH (determinado → indeterminado)
+Empleado 2: Logística → Tecnología (determinado → indeterminado)
+Empleado 3: Logística → Finanzas (determinado → indeterminado)
+Mantener historial completo de contratos y cambios de cargo
+Fechas coherentes con transición de áreas
+
+Estados Actuales de Contratos
+Contratos Próximos a Vencer (7-8 empleados)
+
+Vencimiento en los próximos 30 días
+Solo contratos de obra determinada
+Candidatos para renovación
+
+Contratos Vencidos (4-5 empleados)
+
+Vencidos en los últimos 15 días
+Requieren atención inmediata
+Status de contrato debe ser "terminado" pero empleado aún activo
+
+Contratos Vigentes (Resto de empleados)
+
+Contratos indeterminados activos
+Contratos determinados con tiempo restante suficiente
+
+Lógica Temporal para Contratos de 90 días
+Cálculo de Fechas
+
+Primer contrato: Fecha ingreso empleado
+Primera renovación: +90 días desde inicio primer contrato
+Segunda renovación: +90 días desde inicio primera renovación
+Sin gaps: Fecha fin contrato anterior -> dia siguiente = Fecha inicio siguiente contrato
+
+Distribución Temporal Sugerida
+
+Feb 2024 - Jul 2024: Primeras incorporaciones (18 empleados)
+Ago 2024 - Ene 2025: Segunda ola (20 empleados)
+Feb 2025 - Ago 2025: Incorporaciones recientes (12 empleados)
+
+Distribución de Fechas
+
+Evitar coincidencias: No más de 3 empleados por mes con la misma fecha
+Distribución uniforme: Incorporaciones distribuidas proporcionalmente a lo largo de 18 meses
+Fechas realistas: Evitar fines de semana y días festivos para ingresos
+
+Consideraciones Adicionales
+Datos Coherentes
+
+Cédulas venezolanas válidas (V-xxxxxxxx)
+Nombres y apellidos realistas
+Emails corporativos consistentes
+Fechas de nacimiento coherentes con edad laboral
+
+Jerarquía Organizacional
+
+Cada gerencia debe tener un gerente (usuario con rol "rrhh" o "supervisor")
+Algunos empleados deben tener supervisores asignados
+Mantener coherencia en niveles jerárquicos
+
+Períodos de Prueba Detallados
+Reglas Generales
+
+Primer contrato: Período de prueba automático de 30 días para TODOS los empleados (independiente del tipo de contrato)
+Ascensos: Período de prueba de 30 días al cambiar de cargo/área
+Renovaciones: No generan período de prueba adicional (mismo cargo)
+
+Empleados Actualmente en Período de Prueba
+Por Ingreso Reciente (4-5 empleados)
+
+Empleados incorporados en los últimos 30 días
+Estado: "activo" en período de prueba
+Fecha fin período de prueba: dentro de los próximos 30 días
+Aplica para cualquier tipo de contrato (determinado e indeterminado)
+
+Por Ascenso/Cambio de Área (2 empleados)
+
+Los 2 empleados que cambiaron de área operativa a administrativa
+Período de prueba por nuevo cargo, no por nuevo contrato
+Fechas de ascenso: últimos 30 días
+Estado: "activo" en período de prueba por ascenso
+
+Estados de Períodos de Prueba
+
+Activos: En curso, requieren evaluación próxima
+Aprobados: Completados exitosamente
+En extensión: Período extendido por evaluación pendiente
+
+Validaciones Requeridas
+
+Fechas coherentes: Ingreso empleado = inicio primer contrato
+Estados consistentes: Contratos vencidos vs vigentes vs próximos a vencer
+Historiales completos: Todos los contratos de cada empleado registrados
+Transiciones lógicas: Cambios de área con justificación temporal
+Renovaciones consecutivas: Sin gaps entre contratos renovados

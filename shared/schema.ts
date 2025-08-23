@@ -83,11 +83,14 @@ export const employees = pgTable("employees", {
 export const contracts = pgTable("contracts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   employeeId: varchar("employee_id").notNull().references(() => employees.id),
+  contratoAnterior: varchar("contrato_anterior").references(() => contracts.id),
   tipoContrato: contractTypeEnum("tipo_contrato").notNull(),
   fechaInicio: date("fecha_inicio").notNull(),
   fechaFin: date("fecha_fin"),
   salario: integer("salario").notNull(),
   clausulasEspeciales: text("clausulas_especiales"),
+  motivoRenovacion: text("motivo_renovacion"),
+  numeroRenovacion: integer("numero_renovacion").notNull().default(0),
   status: contractStatusEnum("status").notNull().default("activo"),
   creadoPor: varchar("creado_por").notNull().references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow()

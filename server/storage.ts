@@ -495,9 +495,24 @@ export class PostgresStorage implements IStorage {
   }
 
   async getContractsByEmployee(employeeId: string): Promise<Contract[]> {
-    const result = await this
-      .sql`SELECT * FROM contracts WHERE employee_id = ${employeeId} ORDER BY created_at DESC`;
-    return result as Contract[];
+    const result = await this.sql`
+      SELECT c.*, 
+             prev.id as previous_contract_id,
+             prev.fecha_fin as previous_end_date,
+             prev.tipo_contrato as previous_type
+      FROM contracts c
+      LEFT JOIN contracts prev ON c.contrato_anterior = prev.id
+      WHERE c.employee_id = ${employeeId} 
+      ORDER BY c.created_at DESC, c.numero_renovacion DESC
+    `;
+    return result.map((row: any) => ({
+      ...row,
+      previousContract: row.previous_contract_id ? {
+        id: row.previous_contract_id,
+        endDate: row.previous_end_date,
+        type: row.previous_type
+      } : null
+    })) as Contract[];
   }
 
   async createContract(contract: InsertContract): Promise<Contract> {
@@ -568,12 +583,14 @@ export class PostgresStorage implements IStorage {
       SELECT 
         c.*,
         u.cedula as submitted_by_cedula, u.role as submitted_by_role,
+        e.first_name as submitted_by_first_name, e.last_name as submitted_by_last_name,
         ev.cedula as evaluated_by_cedula, ev.role as evaluated_by_role,
-        ca.name as cargo_name,
-        d.name as departamento_name, d.id as departamento_id,
-        g.name as gerencia_name, g.id as gerencia_id
+        ca.nombre as cargo_name,
+        d.nombre as departamento_name, d.id as departamento_id,
+        g.nombre as gerencia_name, g.id as gerencia_id
       FROM candidates c
       JOIN users u ON c.submitted_by = u.id
+      LEFT JOIN employees e ON u.id = e.user_id
       LEFT JOIN users ev ON c.evaluated_by = ev.id
       JOIN cargos ca ON c.cargo_id = ca.id
       JOIN departamentos d ON ca.departamento_id = d.id
@@ -622,6 +639,9 @@ export class PostgresStorage implements IStorage {
         password: "",
         role: row.submitted_by_role,
         isActive: true,
+        fullName: row.submitted_by_first_name && row.submitted_by_last_name 
+          ? `${row.submitted_by_first_name} ${row.submitted_by_last_name}`
+          : row.submitted_by_cedula,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       },
@@ -865,129 +885,344 @@ export class MemStorage implements IStorage {
   }
 
   private async initializeData() {
-    // Create default organizational structure
+    // Crear estructura organizacional según especificaciones
+    
+    // 1. GERENCIAS (5 total)
     const gerenciaRRHH = await this.createGerencia({
-      name: "Gerencia de RRHH",
-      description: "Gestión de Recursos Humanos",
+      name: "Recursos Humanos",
+      description: "Administrativa - Gestión del talento humano y desarrollo organizacional",
     });
 
-    const gerenciaOps = await this.createGerencia({
-      name: "Gerencia de Operaciones",
-      description: "Operaciones y Producción",
+    const gerenciaFinanzas = await this.createGerencia({
+      name: "Finanzas y Contabilidad", 
+      description: "Administrativa - Gestión financiera y contable de la organización",
     });
 
-    const gerenciaIT = await this.createGerencia({
-      name: "Gerencia de Tecnología",
-      description: "Sistemas y Tecnología",
+    const gerenciaOperaciones = await this.createGerencia({
+      name: "Operaciones",
+      description: "Operativa - Procesos productivos y control de calidad",
     });
 
-    // Departamentos
-    const deptRRHH = await this.createDepartamento({
+    const gerenciaLogistica = await this.createGerencia({
+      name: "Logística y Distribución",
+      description: "Operativa - Gestión de almacenes, inventario y distribución",
+    });
+
+    const gerenciaTecnologia = await this.createGerencia({
+      name: "Tecnología e Informática",
+      description: "Administrativa - Desarrollo de sistemas y soporte tecnológico",
+    });
+
+    // 2. DEPARTAMENTOS (10 total - 2 por gerencia)
+    
+    // Recursos Humanos
+    const deptAdminPersonal = await this.createDepartamento({
       name: "Administración de Personal",
       gerenciaId: gerenciaRRHH.id,
     });
 
     const deptReclutamiento = await this.createDepartamento({
-      name: "Reclutamiento y Selección",
+      name: "Reclutamiento y Selección", 
       gerenciaId: gerenciaRRHH.id,
     });
 
+    // Finanzas y Contabilidad
+    const deptContabilidad = await this.createDepartamento({
+      name: "Contabilidad General",
+      gerenciaId: gerenciaFinanzas.id,
+    });
+
+    const deptTesoreria = await this.createDepartamento({
+      name: "Tesorería y Cobranzas",
+      gerenciaId: gerenciaFinanzas.id,
+    });
+
+    // Operaciones  
     const deptProduccion = await this.createDepartamento({
       name: "Producción",
-      gerenciaId: gerenciaOps.id,
+      gerenciaId: gerenciaOperaciones.id,
     });
 
     const deptCalidad = await this.createDepartamento({
-      name: "Control de Calidad",
-      gerenciaId: gerenciaOps.id,
+      name: "Control de Calidad", 
+      gerenciaId: gerenciaOperaciones.id,
     });
 
+    // Logística y Distribución
+    const deptAlmacen = await this.createDepartamento({
+      name: "Almacén y Inventario",
+      gerenciaId: gerenciaLogistica.id,
+    });
+
+    const deptTransporte = await this.createDepartamento({
+      name: "Transporte y Distribución",
+      gerenciaId: gerenciaLogistica.id,
+    });
+
+    // Tecnología e Informática
     const deptDesarrollo = await this.createDepartamento({
-      name: "Desarrollo de Software",
-      gerenciaId: gerenciaIT.id,
+      name: "Desarrollo de Sistemas",
+      gerenciaId: gerenciaTecnologia.id,
     });
 
     const deptSoporte = await this.createDepartamento({
       name: "Soporte Técnico",
-      gerenciaId: gerenciaIT.id,
+      gerenciaId: gerenciaTecnologia.id,
     });
 
-    // Cargos
-    const cargoGerente = await this.createCargo({
-      name: "Gerente RRHH",
-      departamentoId: deptRRHH.id,
+    // 3. CARGOS por departamento
+    
+    // Recursos Humanos - Administración de Personal (5 cargos)
+    const cargoGerenteRRHH = await this.createCargo({
+      name: "Gerente de RRHH",
+      departamentoId: deptAdminPersonal.id,
+    });
+    const cargoAnalistaRRHH = await this.createCargo({
+      name: "Analista de RRHH",
+      departamentoId: deptAdminPersonal.id,
+    });
+    const cargoCoordinadorNomina = await this.createCargo({
+      name: "Coordinador de Nómina",
+      departamentoId: deptAdminPersonal.id,
+    });
+    const cargoAsistenteRRHH = await this.createCargo({
+      name: "Asistente de RRHH",
+      departamentoId: deptAdminPersonal.id,
+    });
+    const cargoEspecialistaBienestar = await this.createCargo({
+      name: "Especialista en Bienestar",
+      departamentoId: deptAdminPersonal.id,
     });
 
-    const cargoAnalista = await this.createCargo({
-      name: "Analista RRHH",
-      departamentoId: deptRRHH.id,
+    // Recursos Humanos - Reclutamiento y Selección (5 cargos)
+    const cargoJefeReclutamiento = await this.createCargo({
+      name: "Jefe de Reclutamiento",
+      departamentoId: deptReclutamiento.id,
     });
-
-    const cargoReclutador = await this.createCargo({
-      name: "Especialista en Reclutamiento",
+    const cargoReclutadorSenior = await this.createCargo({
+      name: "Reclutador Senior",
+      departamentoId: deptReclutamiento.id,
+    });
+    const cargoReclutadorJunior = await this.createCargo({
+      name: "Reclutador Junior",
+      departamentoId: deptReclutamiento.id,
+    });
+    const cargoPsicologoOrg = await this.createCargo({
+      name: "Psicólogo Organizacional",
+      departamentoId: deptReclutamiento.id,
+    });
+    const cargoCoordinadorSeleccion = await this.createCargo({
+      name: "Coordinador de Selección",
       departamentoId: deptReclutamiento.id,
     });
 
-    const cargoSupervisorProd = await this.createCargo({
+    // Finanzas - Contabilidad General (5 cargos)
+    const cargoContadorGeneral = await this.createCargo({
+      name: "Contador General",
+      departamentoId: deptContabilidad.id,
+    });
+    const cargoContadorSenior = await this.createCargo({
+      name: "Contador Senior",
+      departamentoId: deptContabilidad.id,
+    });
+    const cargoContadorJunior = await this.createCargo({
+      name: "Contador Junior",
+      departamentoId: deptContabilidad.id,
+    });
+    const cargoAnalistaCostos = await this.createCargo({
+      name: "Analista de Costos",
+      departamentoId: deptContabilidad.id,
+    });
+    const cargoAsistenteContable = await this.createCargo({
+      name: "Asistente Contable",
+      departamentoId: deptContabilidad.id,
+    });
+
+    // Finanzas - Tesorería y Cobranzas (5 cargos)
+    const cargoTesorero = await this.createCargo({
+      name: "Tesorero",
+      departamentoId: deptTesoreria.id,
+    });
+    const cargoAnalistaFinanciero = await this.createCargo({
+      name: "Analista Financiero",
+      departamentoId: deptTesoreria.id,
+    });
+    const cargoGestorCobranzas = await this.createCargo({
+      name: "Gestor de Cobranzas",
+      departamentoId: deptTesoreria.id,
+    });
+    const cargoCajero = await this.createCargo({
+      name: "Cajero",
+      departamentoId: deptTesoreria.id,
+    });
+    const cargoAsistenteTesoreria = await this.createCargo({
+      name: "Asistente de Tesorería",
+      departamentoId: deptTesoreria.id,
+    });
+
+    // Operaciones - Producción (5 cargos)
+    const cargoSupervisorProduccion = await this.createCargo({
       name: "Supervisor de Producción",
       departamentoId: deptProduccion.id,
     });
-
-    const cargoOperario = await this.createCargo({
-      name: "Operario de Producción",
+    const cargoOperarioSenior = await this.createCargo({
+      name: "Operario Senior",
+      departamentoId: deptProduccion.id,
+    });
+    const cargoOperarioJunior = await this.createCargo({
+      name: "Operario Junior",
+      departamentoId: deptProduccion.id,
+    });
+    const cargoTecnicoProduccion = await this.createCargo({
+      name: "Técnico de Producción",
+      departamentoId: deptProduccion.id,
+    });
+    const cargoAsistenteProduccion = await this.createCargo({
+      name: "Asistente de Producción",
       departamentoId: deptProduccion.id,
     });
 
-    const cargoInspector = await this.createCargo({
+    // Operaciones - Control de Calidad (5 cargos)
+    const cargoJefeCalidad = await this.createCargo({
+      name: "Jefe de Calidad",
+      departamentoId: deptCalidad.id,
+    });
+    const cargoInspectorCalidad = await this.createCargo({
       name: "Inspector de Calidad",
       departamentoId: deptCalidad.id,
     });
+    const cargoAnalistaProcesos = await this.createCargo({
+      name: "Analista de Procesos",
+      departamentoId: deptCalidad.id,
+    });
+    const cargoTecnicoLaboratorio = await this.createCargo({
+      name: "Técnico de Laboratorio",
+      departamentoId: deptCalidad.id,
+    });
+    const cargoAuditorCalidad = await this.createCargo({
+      name: "Auditor de Calidad",
+      departamentoId: deptCalidad.id,
+    });
 
+    // Logística - Almacén y Inventario (5 cargos)
+    const cargoJefeAlmacen = await this.createCargo({
+      name: "Jefe de Almacén",
+      departamentoId: deptAlmacen.id,
+    });
+    const cargoCoordinadorInventario = await this.createCargo({
+      name: "Coordinador de Inventario",
+      departamentoId: deptAlmacen.id,
+    });
+    const cargoAlmacenista = await this.createCargo({
+      name: "Almacenista",
+      departamentoId: deptAlmacen.id,
+    });
+    const cargoDespachador = await this.createCargo({
+      name: "Despachador",
+      departamentoId: deptAlmacen.id,
+    });
+    const cargoAuxiliarAlmacen = await this.createCargo({
+      name: "Auxiliar de Almacén",
+      departamentoId: deptAlmacen.id,
+    });
+
+    // Logística - Transporte y Distribución (5 cargos)
+    const cargoJefeTransporte = await this.createCargo({
+      name: "Jefe de Transporte",
+      departamentoId: deptTransporte.id,
+    });
+    const cargoCoordinadorLogistico = await this.createCargo({
+      name: "Coordinador Logístico",
+      departamentoId: deptTransporte.id,
+    });
+    const cargoConductor = await this.createCargo({
+      name: "Conductor",
+      departamentoId: deptTransporte.id,
+    });
+    const cargoAuxiliarDespacho = await this.createCargo({
+      name: "Auxiliar de Despacho",
+      departamentoId: deptTransporte.id,
+    });
+    const cargoControladorFlota = await this.createCargo({
+      name: "Controlador de Flota",
+      departamentoId: deptTransporte.id,
+    });
+
+    // Tecnología - Desarrollo de Sistemas (5 cargos)
+    const cargoGerenteTI = await this.createCargo({
+      name: "Gerente de TI",
+      departamentoId: deptDesarrollo.id,
+    });
     const cargoDevSenior = await this.createCargo({
       name: "Desarrollador Senior",
       departamentoId: deptDesarrollo.id,
     });
-
     const cargoDevJunior = await this.createCargo({
       name: "Desarrollador Junior",
       departamentoId: deptDesarrollo.id,
     });
-
+    const cargoAnalistaSistemas = await this.createCargo({
+      name: "Analista de Sistemas",
+      departamentoId: deptDesarrollo.id,
+    });
     const cargoTechLead = await this.createCargo({
       name: "Tech Lead",
       departamentoId: deptDesarrollo.id,
     });
 
-    const cargoSoporte = await this.createCargo({
-      name: "Técnico de Soporte",
+    // Tecnología - Soporte Técnico (5 cargos)
+    const cargoJefeSoporte = await this.createCargo({
+      name: "Jefe de Soporte",
+      departamentoId: deptSoporte.id,
+    });
+    const cargoTecnicoSenior = await this.createCargo({
+      name: "Técnico Senior",
+      departamentoId: deptSoporte.id,
+    });
+    const cargoTecnicoJunior = await this.createCargo({
+      name: "Técnico Junior",
+      departamentoId: deptSoporte.id,
+    });
+    const cargoAdminRedes = await this.createCargo({
+      name: "Administrador de Redes",
+      departamentoId: deptSoporte.id,
+    });
+    const cargoEspecialistaSoporte = await this.createCargo({
+      name: "Especialista en Soporte",
       departamentoId: deptSoporte.id,
     });
 
-    // Datos de empleados
+    // 4. EMPLEADOS (50 total) - Distribución específica según área
     const empleadosData = [
+      // === RECURSOS HUMANOS (10 empleados) ===
+      // Administración de Personal (5)
       {
         cedula: "V-12345678",
-        fullName: "María González",
+        fullName: "María González Herrera",
         email: "maria.gonzalez@empresa.com",
         phone: "+58 414-1234567",
-        birthDate: "1985-03-15",
-        cargo: cargoGerente,
-        role: "admin",
+        birthDate: "1980-03-15",
+        cargo: cargoGerenteRRHH,
+        role: "gerente_rrhh",
         status: "activo",
-        startDate: "2024-01-15",
+        startDate: "2024-02-15",
         probation: false,
+        tipoContrato: "indefinido",
+        area: "administrativa"
       },
       {
         cedula: "V-23456789",
-        fullName: "Carlos Rodríguez",
+        fullName: "Carlos Rodríguez Silva",
         email: "carlos.rodriguez@empresa.com",
         phone: "+58 424-2345678",
-        birthDate: "1990-07-22",
-        cargo: cargoAnalista,
+        birthDate: "1985-07-22",
+        cargo: cargoAnalistaRRHH,
         role: "admin_rrhh",
         status: "activo",
-        startDate: "2021-05-10",
+        startDate: "2024-03-10",
         probation: false,
+        tipoContrato: "indefinido",
+        area: "administrativa"
       },
       {
         cedula: "V-34567890",

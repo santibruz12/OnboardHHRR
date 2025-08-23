@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Search, MoreHorizontal, Mail, Phone, Users, Edit2, Eye, Trash2, Calendar, RotateCcw, FileText, History } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Mail, Phone, Users, Edit2, Eye, Trash2, Calendar, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,6 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { EmployeeForm } from "@/components/forms/employee-form";
-import { ContractHistoryDialog } from "@/components/contract-history-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate, calculateSeniority } from "@/lib/date-utils";
@@ -23,7 +22,6 @@ export default function Employees() {
   const [editingEmployee, setEditingEmployee] = useState<EmployeeWithRelations | null>(null);
   const [viewingEmployee, setViewingEmployee] = useState<EmployeeWithRelations | null>(null);
   const [deleteEmployeeId, setDeleteEmployeeId] = useState<string | null>(null);
-  const [contractHistoryEmployee, setContractHistoryEmployee] = useState<{ id: string; name: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
   const [dateTypeFilter, setDateTypeFilter] = useState("ingreso"); // ingreso o fin
@@ -170,10 +168,6 @@ export default function Employees() {
 
   const handleViewEmployee = (employee: EmployeeWithRelations) => {
     setViewingEmployee(employee);
-  };
-
-  const handleViewContractHistory = (employee: EmployeeWithRelations) => {
-    setContractHistoryEmployee({ id: employee.id, name: employee.fullName });
   };
 
   const handleDeleteEmployee = (employeeId: string) => {
@@ -456,15 +450,6 @@ export default function Employees() {
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      onClick={() => handleViewContractHistory(employee)}
-                      data-testid={`button-contracts-${employee.id}`}
-                      title="Ver historial de contratos"
-                    >
-                      <FileText className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
                       onClick={() => handleViewEmployee(employee)}
                       data-testid={`button-view-${employee.id}`}
                     >
@@ -602,14 +587,6 @@ export default function Employees() {
           )}
         </DialogContent>
       </Dialog>
-
-      {/* Contract History Dialog */}
-      <ContractHistoryDialog
-        employeeId={contractHistoryEmployee?.id || null}
-        employeeName={contractHistoryEmployee?.name || ""}
-        open={!!contractHistoryEmployee}
-        onOpenChange={() => setContractHistoryEmployee(null)}
-      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!deleteEmployeeId} onOpenChange={() => setDeleteEmployeeId(null)}>

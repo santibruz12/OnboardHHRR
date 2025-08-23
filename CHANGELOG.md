@@ -8,40 +8,13 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ## [Sin liberar]
 
 ### Por agregar
-- Sistema de alertas para candidatos aprobados (crear empleado desde candidato)
 - Ordenamiento por columnas en otras tablas del sistema (contratos, candidatos, etc.)
+- Completar módulo de candidatos (formularios incompletos)
 - Sistema de notificaciones en tiempo real
 - Exportación de datos (Excel/PDF)
 - Gestión de vacaciones
 - Testing automatizado
 - Logs de auditoría detallados
-
-## [1.6.0] - 2025-08-23
-
-### Agregado
-- ✅ **Migración exitosa a Replit Environment** - Proyecto migrado desde Replit Agent sin pérdida de funcionalidad
-- ✅ **Información del reclutador en módulo de candidatos** - Nueva columna muestra nombre completo del reclutador
-- ✅ **JOIN con tabla de empleados para nombres** - Consulta SQL optimizada para obtener nombres completos
-- ✅ **Fallback inteligente de nombres** - Muestra cédula si no se encuentra nombre del reclutador
-- ✅ **Planificación de alertas de candidatos aprobados** - Diseño conceptual para flujo candidato → empleado
-
-### Corregido
-- ✅ **Error de propiedades incorrectas en candidatos** - Cambiado `name` por `nombre` según esquema de BD
-- ✅ **Error de orden de parámetros en apiRequest** - Función ahora recibe (method, url, data) correctamente
-- ✅ **CRUD de candidatos completamente funcional** - Crear, actualizar y eliminar candidatos sin errores
-- ✅ **Visualización correcta de cargo y departamento** - Nombres se muestran apropiadamente en tabla
-
-### Mejorado
-- **Experiencia de usuario en candidatos** - Información más completa y clara del reclutador responsable
-- **Consulta de base de datos optimizada** - JOIN eficiente para obtener datos relacionados
-- **Trazabilidad del proceso de reclutamiento** - Ahora se puede identificar quién registró cada candidato
-- **Preparación para flujos futuros** - Base sólida para implementar alertas automáticas
-
-### Técnico
-- Query SQL mejorada con LEFT JOIN a tabla employees para obtener nombres
-- Lógica de concatenación de nombres con fallback a cédula
-- Corrección de todas las llamadas a apiRequest en el proyecto
-- Documentación completa de cambios en `attached_assets/10 Documentacion del sistema maryoris.md`
 
 ## [1.5.0] - 2025-01-16
 

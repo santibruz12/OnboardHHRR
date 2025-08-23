@@ -27,7 +27,7 @@ export function CandidatesPage() {
   });
 
   const deleteCandidateMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/candidates/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/candidates/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/candidates"] });
       toast({
@@ -219,7 +219,6 @@ export function CandidatesPage() {
                 <TableHead>Candidato</TableHead>
                 <TableHead>Contacto</TableHead>
                 <TableHead>Cargo</TableHead>
-                <TableHead>Reclutador</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Fecha Envío</TableHead>
                 <TableHead>Acciones</TableHead>
@@ -248,19 +247,9 @@ export function CandidatesPage() {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{candidate.cargo.nombre}</div>
+                      <div className="font-medium">{candidate.cargo.name}</div>
                       <div className="text-sm text-muted-foreground">
-                        {candidate.cargo.departamento.nombre}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div>
-                      <div className="text-sm font-medium">
-                        {(candidate.submittedByUser as any)?.fullName || candidate.submittedByUser?.cedula}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {candidate.submittedByUser?.role || 'Reclutador'}
+                        {candidate.cargo.departamento.name}
                       </div>
                     </div>
                   </TableCell>

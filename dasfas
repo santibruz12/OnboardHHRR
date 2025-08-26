@@ -1,0 +1,117 @@
+[33mcommit 7af951a8e93a4a0bb80ffca8815bab5f4e960e9a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Fri Aug 22 23:46:53 2025 -0400
+
+    commit 9 modificaciones en el modulo de candidatos y modificacion inicial de datos de prueba
+
+[33mcommit 9c6b5919d190af1738c9315c9b78c654308b4d9f[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Fri Aug 22 11:29:41 2025 -0400
+
+    commit #9 modificaciones frontend
+
+[33mcommit 3cf186947587dc1bcad82f2eb058aa43cf3d1010[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Thu Aug 14 20:07:30 2025 -0400
+
+    Commit #8 modificaciones en frontend, mejoras de modulo empleados, ufiltros de fecha y otras
+
+[33mcommit 242930f956d2d91b5bd4791b117ec00cefe0031a[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Thu Aug 14 17:39:02 2025 -0400
+
+    commit #7 modificaciones frontend antrodriguezs32 pero no se hicieron muy bien todas, pase el listado de errores identificados pero solo se aplicaron algunas
+
+[33mcommit 96ad1fe3ed623af1da1f172e83e8971aa0fe4530[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Thu Aug 14 16:19:00 2025 -0400
+
+    commit #6 modificaciones frontend y algunas correcciones
+
+[33mcommit 04343d2a4946910ceee442e93cc06752fde53e2b[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Thu Aug 14 02:23:36 2025 -0400
+
+    commit #5 jake creados empleados en base de datos +conexion, revisar si la base de datos debe cambiarse cada vez
+
+[33mcommit 32edbae5a56cbf7c5968492b3a8f58cd44e84fd7[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Wed Aug 13 23:47:44 2025 -0400
+
+    commit #4 egresos+informes+roles y otros ajustes
+
+[33mcommit 4823616962dcdeb125b147f79b4e2fb4b49d4d66[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Wed Aug 13 21:02:13 2025 -0400
+
+    commit #3 agregado modulo reclutamiento y periodos de prueba
+
+[33mcommit 537d9cdcbf1797fcb91ffa57196d884fd9d36563[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Wed Aug 13 21:01:11 2025 -0400
+
+    commit #3 agregado modulo reclutamiento y periodos de prueba
+
+[33mcommit f07c0e2cf132af1d3a14f7a80fa25a2af8770fcd[m
+Author: santibruz12 <santibruz12@gmail.com>
+Date:   Wed Aug 13 18:24:01 2025 -0400
+
+    commit #2 version con crud de contratos y empleados(falta modificar y mejorar algunas cosas)+ediciones sidebar(mejorable)
+
+[33mcommit 2345f020d529b1c2c457596ecd70c5166dccdfbd[m
+Author: antoniobrodrigu <43752390-antoniobrodrigu@users.noreply.replit.com>
+Date:   Fri Aug 8 23:46:34 2025 +0000
+
+    Prepare project for public release and GitHub upload
+    
+    Add .gitignore, LICENSE, README.md, CHANGELOG.md, CONTRIBUTING.md, and DEPLOYMENT.md files; update .gitignore to include new entries; add recent changes to replit.md.
+    
+    Replit-Commit-Author: Agent
+    Replit-Commit-Session-Id: e0448382-e442-4a62-b043-ff83ccb69340
+    Replit-Commit-Checkpoint-Type: full_checkpoint
+    Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/54e07dfd-5d42-4133-8da3-d59eed8fa98b/e0448382-e442-4a62-b043-ff83ccb69340/XdaXazy
+
+[33mcommit 5fd98cb1d54748222266f4a35bf43a4e93315a7a[m
+Author: antoniobrodrigu <43752390-antoniobrodrigu@users.noreply.replit.com>
+Date:   Fri Aug 8 23:41:59 2025 +0000
+
+    Update documentation for employee management features
+    
+    Update DOCUMENTACION_SISTEMA.txt to reflect changes in employee management, specifically adding "EA" to the section header for employee management and clarifying existing features.
+    
+    Replit-Commit-Author: Agent
+    Replit-Commit-Session-Id: e0448382-e442-4a62-b043-ff83ccb69340
+    Replit-Commit-Checkpoint-Type: full_checkpoint
+    Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/54e07dfd-5d42-4133-8da3-d59eed8fa98b/e0448382-e442-4a62-b043-ff83ccb69340/XdaXazy
+
+[33mcommit f763c31a82a528fb1bacc7e34c4d3976eec4a7f9[m
+Author: antoniobrodrigu <43752390-antoniobrodrigu@users.noreply.replit.com>
+Date:   Fri Aug 8 23:26:03 2025 +0000
+
+    Add documentation explaining the HR system and its technical details
+    
+    Create a new DOCUMENTATION_SISTEMA.txt file detailing the project's description, technical architecture (frontend, backend, database, security), and database schema.
+    
+    Replit-Commit-Author: Agent
+    Replit-Commit-Session-Id: e0448382-e442-4a62-b043-ff83ccb69340
+    Replit-Commit-Checkpoint-Type: full_checkpoint
+    Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/54e07dfd-5d42-4133-8da3-d59eed8fa98b/e0448382-e442-4a62-b043-ff83ccb69340/XdaXazy
+
+[33mcommit fd0717b34386f6a4c0b01cab146329ec99235906[m
+Author: antoniobrodrigu <43752390-antoniobrodrigu@users.noreply.replit.com>
+Date:   Fri Aug 8 23:12:06 2025 +0000
+
+    Add core application structure and navigation components
+    
+    Implement the foundational structure for the HR management system, including the main application layout with a collapsible sidebar, routing for key sections like dashboard and employees, and a cascading select component for hierarchical data selection.
+    
+    Replit-Commit-Author: Agent
+    Replit-Commit-Session-Id: e0448382-e442-4a62-b043-ff83ccb69340
+    Replit-Commit-Checkpoint-Type: full_checkpoint
+    Replit-Commit-Screenshot-Url: https://storage.googleapis.com/screenshot-production-us-central1/54e07dfd-5d42-4133-8da3-d59eed8fa98b/e0448382-e442-4a62-b043-ff83ccb69340/XdaXazy
+
+[33mcommit 6db36d29f733e4b7d89fdcd2a9c91970a4886c44[m
+Author: antoniobrodrigu <43752390-antoniobrodrigu@users.noreply.replit.com>
+Date:   Fri Aug 8 22:38:23 2025 +0000
+
+    Initial commit

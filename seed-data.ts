@@ -90,53 +90,53 @@ const cargosData = [
 const empleadosData = [
   // Gerentes y supervisores (roles altos)
   { cedula: "V-12345678", fullName: "María González", email: "maria.gonzalez@empresa.com", phone: "0414-1234567", cargo: "Tech Lead", role: "supervisor", status: "activo" },
-  { cedula: "V-23456789", fullName: "Carlos Rodríguez", email: "carlos.rodriguez@empresa.com", phone: "0424-2345678", cargo: "Gerente de Cuentas", role: "gerente_rrhh", status: "activo" },
-  { cedula: "V-34567890", fullName: "Ana Martínez", email: "ana.martinez@empresa.com", phone: "0416-3456789", cargo: "Especialista en Reclutamiento", role: "admin_rrhh", status: "activo" },
+  { cedula: "V-23456789", fullName: "Carlos Rodríguez", email: "carlos.rodriguez@empresa.com", phone: "0424-2345678", cargo: "Gerente de Cuentas", role: "supervisor", status: "activo" },
+  { cedula: "V-34567890", fullName: "Ana Martínez", email: "ana.martinez@empresa.com", phone: "0416-3456789", cargo: "Especialista en Reclutamiento", role: "rrhh", status: "activo" },
   { cedula: "V-45678901", fullName: "Luis Pérez", email: "luis.perez@empresa.com", phone: "0426-4567890", cargo: "Supervisor de Producción", role: "supervisor", status: "activo" },
   
   // Desarrolladores y técnicos
-  { cedula: "V-56789012", fullName: "Sandra López", email: "sandra.lopez@empresa.com", phone: "0414-5678901", cargo: "Desarrollador Senior", role: "empleado", status: "activo" },
-  { cedula: "V-67890123", fullName: "Roberto Silva", email: "roberto.silva@empresa.com", phone: "0424-6789012", cargo: "Desarrollador Junior", role: "empleado", status: "periodo_prueba" },
-  { cedula: "V-78901234", fullName: "Carmen Díaz", email: "carmen.diaz@empresa.com", phone: "0416-7890123", cargo: "Administrador de Sistemas", role: "empleado", status: "activo" },
-  { cedula: "V-89012345", fullName: "Fernando Castro", email: "fernando.castro@empresa.com", phone: "0426-8901234", cargo: "Analista de Seguridad", role: "empleado", status: "periodo_prueba" },
+  { cedula: "V-56789012", fullName: "Sandra López", email: "sandra.lopez@empresa.com", phone: "0414-5678901", cargo: "Desarrollador Senior", role: "employee", status: "activo" },
+  { cedula: "V-67890123", fullName: "Roberto Silva", email: "roberto.silva@empresa.com", phone: "0424-6789012", cargo: "Desarrollador Junior", role: "employee", status: "periodo_prueba" },
+  { cedula: "V-78901234", fullName: "Carmen Díaz", email: "carmen.diaz@empresa.com", phone: "0416-7890123", cargo: "Administrador de Sistemas", role: "employee", status: "activo" },
+  { cedula: "V-89012345", fullName: "Fernando Castro", email: "fernando.castro@empresa.com", phone: "0426-8901234", cargo: "Analista de Seguridad", role: "employee", status: "periodo_prueba" },
   
   // Área comercial
-  { cedula: "V-90123456", fullName: "Gabriela Morales", email: "gabriela.morales@empresa.com", phone: "0414-9012345", cargo: "Ejecutivo de Ventas", role: "empleado", status: "activo" },
-  { cedula: "V-01234567", fullName: "Diego Herrera", email: "diego.herrera@empresa.com", phone: "0424-0123456", cargo: "Especialista en Marketing", role: "empleado", status: "activo" },
-  { cedula: "V-12340987", fullName: "Patricia Ruiz", email: "patricia.ruiz@empresa.com", phone: "0416-1234098", cargo: "Representante de Atención", role: "empleado", status: "periodo_prueba" },
+  { cedula: "V-90123456", fullName: "Gabriela Morales", email: "gabriela.morales@empresa.com", phone: "0414-9012345", cargo: "Ejecutivo de Ventas", role: "employee", status: "activo" },
+  { cedula: "V-01234567", fullName: "Diego Herrera", email: "diego.herrera@empresa.com", phone: "0424-0123456", cargo: "Especialista en Marketing", role: "employee", status: "activo" },
+  { cedula: "V-12340987", fullName: "Patricia Ruiz", email: "patricia.ruiz@empresa.com", phone: "0416-1234098", cargo: "Representante de Atención", role: "employee", status: "periodo_prueba" },
   
   // Área operaciones
-  { cedula: "V-23451098", fullName: "Miguel Torres", email: "miguel.torres@empresa.com", phone: "0426-2345109", cargo: "Operario de Producción", role: "empleado", status: "activo" },
-  { cedula: "V-34562109", fullName: "Elena Vargas", email: "elena.vargas@empresa.com", phone: "0414-3456210", cargo: "Coordinador Logístico", role: "empleado", status: "activo" },
-  { cedula: "V-45673210", fullName: "Andrés Mendoza", email: "andres.mendoza@empresa.com", phone: "0424-4567321", cargo: "Técnico de Mantenimiento", role: "empleado", status: "activo" },
+  { cedula: "V-23451098", fullName: "Miguel Torres", email: "miguel.torres@empresa.com", phone: "0426-2345109", cargo: "Operario de Producción", role: "employee", status: "activo" },
+  { cedula: "V-34562109", fullName: "Elena Vargas", email: "elena.vargas@empresa.com", phone: "0414-3456210", cargo: "Coordinador Logístico", role: "employee", status: "activo" },
+  { cedula: "V-45673210", fullName: "Andrés Mendoza", email: "andres.mendoza@empresa.com", phone: "0424-4567321", cargo: "Técnico de Mantenimiento", role: "employee", status: "activo" },
   
   // Área administrativa
-  { cedula: "V-56784321", fullName: "Lucía Jiménez", email: "lucia.jimenez@empresa.com", phone: "0416-5678432", cargo: "Contador", role: "empleado", status: "activo" },
-  { cedula: "V-67895432", fullName: "Ricardo Flores", email: "ricardo.flores@empresa.com", phone: "0426-6789543", cargo: "Analista Financiero", role: "empleado", status: "periodo_prueba" },
-  { cedula: "V-78906543", fullName: "Isabel Ramírez", email: "isabel.ramirez@empresa.com", phone: "0414-7890654", cargo: "Asistente de Compras", role: "empleado", status: "activo" },
+  { cedula: "V-56784321", fullName: "Lucía Jiménez", email: "lucia.jimenez@empresa.com", phone: "0416-5678432", cargo: "Contador", role: "employee", status: "activo" },
+  { cedula: "V-67895432", fullName: "Ricardo Flores", email: "ricardo.flores@empresa.com", phone: "0426-6789543", cargo: "Analista Financiero", role: "employee", status: "periodo_prueba" },
+  { cedula: "V-78906543", fullName: "Isabel Ramírez", email: "isabel.ramirez@empresa.com", phone: "0414-7890654", cargo: "Asistente de Compras", role: "employee", status: "activo" },
   
   // Área calidad
-  { cedula: "V-89017654", fullName: "Javier Ortega", email: "javier.ortega@empresa.com", phone: "0424-8901765", cargo: "Inspector de Calidad", role: "empleado", status: "activo" },
-  { cedula: "V-90128765", fullName: "Mónica Guerrero", email: "monica.guerrero@empresa.com", phone: "0416-9012876", cargo: "Analista de Procesos", role: "empleado", status: "activo" },
+  { cedula: "V-89017654", fullName: "Javier Ortega", email: "javier.ortega@empresa.com", phone: "0424-8901765", cargo: "Inspector de Calidad", role: "employee", status: "activo" },
+  { cedula: "V-90128765", fullName: "Mónica Guerrero", email: "monica.guerrero@empresa.com", phone: "0416-9012876", cargo: "Analista de Procesos", role: "employee", status: "activo" },
   
   // Más empleados con estados variados
-  { cedula: "V-01239876", fullName: "Alejandro Ramos", email: "alejandro.ramos@empresa.com", phone: "0426-0123987", cargo: "Técnico de Soporte", role: "empleado", status: "activo" },
-  { cedula: "V-12349087", fullName: "Beatriz Sánchez", email: "beatriz.sanchez@empresa.com", phone: "0414-1234908", cargo: "Especialista en Redes", role: "empleado", status: "activo" },
-  { cedula: "V-23450198", fullName: "Daniel Vega", email: "daniel.vega@empresa.com", phone: "0424-2345019", cargo: "Analista de RRHH", role: "empleado_captacion", status: "periodo_prueba" },
-  { cedula: "V-34561209", fullName: "Valentina Cruz", email: "valentina.cruz@empresa.com", phone: "0416-3456120", cargo: "Coordinador de Compensaciones", role: "empleado", status: "activo" },
+  { cedula: "V-01239876", fullName: "Alejandro Ramos", email: "alejandro.ramos@empresa.com", phone: "0426-0123987", cargo: "Técnico de Soporte", role: "employee", status: "activo" },
+  { cedula: "V-12349087", fullName: "Beatriz Sánchez", email: "beatriz.sanchez@empresa.com", phone: "0414-1234908", cargo: "Especialista en Redes", role: "employee", status: "activo" },
+  { cedula: "V-23450198", fullName: "Daniel Vega", email: "daniel.vega@empresa.com", phone: "0424-2345019", cargo: "Analista de RRHH", role: "employee", status: "periodo_prueba" },
+  { cedula: "V-34561209", fullName: "Valentina Cruz", email: "valentina.cruz@empresa.com", phone: "0416-3456120", cargo: "Coordinador de Compensaciones", role: "employee", status: "activo" },
   
   // Empleados que tendrán egresos
-  { cedula: "V-45672310", fullName: "Raúl Moreno", email: "raul.moreno@empresa.com", phone: "0426-4567231", cargo: "Desarrollador Senior", role: "empleado", status: "activo" },
-  { cedula: "V-56783421", fullName: "Claudia Peña", email: "claudia.pena@empresa.com", phone: "0414-5678342", cargo: "Ejecutivo de Ventas", role: "empleado", status: "activo" },
-  { cedula: "V-67894532", fullName: "Héctor Salinas", email: "hector.salinas@empresa.com", phone: "0424-6789453", cargo: "Operario de Producción", role: "empleado", status: "activo" },
+  { cedula: "V-45672310", fullName: "Raúl Moreno", email: "raul.moreno@empresa.com", phone: "0426-4567231", cargo: "Desarrollador Senior", role: "employee", status: "activo" },
+  { cedula: "V-56783421", fullName: "Claudia Peña", email: "claudia.pena@empresa.com", phone: "0414-5678342", cargo: "Ejecutivo de Ventas", role: "employee", status: "activo" },
+  { cedula: "V-67894532", fullName: "Héctor Salinas", email: "hector.salinas@empresa.com", phone: "0424-6789453", cargo: "Operario de Producción", role: "employee", status: "activo" },
   
   // Empleados adicionales
-  { cedula: "V-78905643", fullName: "Natalia Romero", email: "natalia.romero@empresa.com", phone: "0416-7890564", cargo: "Desarrollador Junior", role: "empleado", status: "periodo_prueba" },
-  { cedula: "V-89016754", fullName: "Sebastián Aguilar", email: "sebastian.aguilar@empresa.com", phone: "0426-8901675", cargo: "Especialista en Marketing", role: "empleado", status: "activo" },
-  { cedula: "V-90127865", fullName: "Paola Méndez", email: "paola.mendez@empresa.com", phone: "0414-9012786", cargo: "Representante de Atención", role: "empleado", status: "activo" },
-  { cedula: "V-01238976", fullName: "Gustavo Reyes", email: "gustavo.reyes@empresa.com", phone: "0424-0123897", cargo: "Inspector de Calidad", role: "empleado", status: "activo" },
-  { cedula: "V-12340087", fullName: "Laura Campos", email: "laura.campos@empresa.com", phone: "0416-1234008", cargo: "Contador", role: "empleado", status: "activo" },
-  { cedula: "V-23451198", fullName: "Óscar Delgado", email: "oscar.delgado@empresa.com", phone: "0426-2345119", cargo: "Técnico de Mantenimiento", role: "empleado", status: "activo" }
+  { cedula: "V-78905643", fullName: "Natalia Romero", email: "natalia.romero@empresa.com", phone: "0416-7890564", cargo: "Desarrollador Junior", role: "employee", status: "periodo_prueba" },
+  { cedula: "V-89016754", fullName: "Sebastián Aguilar", email: "sebastian.aguilar@empresa.com", phone: "0426-8901675", cargo: "Especialista en Marketing", role: "employee", status: "activo" },
+  { cedula: "V-90127865", fullName: "Paola Méndez", email: "paola.mendez@empresa.com", phone: "0414-9012786", cargo: "Representante de Atención", role: "employee", status: "activo" },
+  { cedula: "V-01238976", fullName: "Gustavo Reyes", email: "gustavo.reyes@empresa.com", phone: "0424-0123897", cargo: "Inspector de Calidad", role: "employee", status: "activo" },
+  { cedula: "V-12340087", fullName: "Laura Campos", email: "laura.campos@empresa.com", phone: "0416-1234008", cargo: "Contador", role: "employee", status: "activo" },
+  { cedula: "V-23451198", fullName: "Óscar Delgado", email: "oscar.delgado@empresa.com", phone: "0426-2345119", cargo: "Técnico de Mantenimiento", role: "employee", status: "activo" }
 ];
 
 // Candidatos para el módulo de reclutamiento
@@ -213,15 +213,15 @@ async function seedDatabase() {
     const gerenciasMap = new Map();
     for (const gerencia of gerenciasData) {
       const result = await sql`
-        INSERT INTO gerencias (name, description)
+        INSERT INTO gerencias (nombre, descripcion)
         VALUES (${gerencia.name}, ${gerencia.description})
         ON CONFLICT DO NOTHING
-        RETURNING id, name
+        RETURNING id, nombre
       `;
       if (result.length > 0) {
         gerenciasMap.set(gerencia.name, result[0].id);
       } else {
-        const existing = await sql`SELECT id FROM gerencias WHERE name = ${gerencia.name}`;
+        const existing = await sql`SELECT id FROM gerencias WHERE nombre = ${gerencia.name}`;
         if (existing.length > 0) {
           gerenciasMap.set(gerencia.name, existing[0].id);
         }
@@ -235,15 +235,15 @@ async function seedDatabase() {
       const gerenciaId = gerenciasMap.get(departamento.gerencia);
       if (gerenciaId) {
         const result = await sql`
-          INSERT INTO departamentos (name, gerencia_id)
+          INSERT INTO departamentos (nombre, gerencia_id)
           VALUES (${departamento.name}, ${gerenciaId})
           ON CONFLICT DO NOTHING
-          RETURNING id, name
+          RETURNING id, nombre
         `;
         if (result.length > 0) {
           departamentosMap.set(departamento.name, result[0].id);
         } else {
-          const existing = await sql`SELECT id FROM departamentos WHERE name = ${departamento.name}`;
+          const existing = await sql`SELECT id FROM departamentos WHERE nombre = ${departamento.name}`;
           if (existing.length > 0) {
             departamentosMap.set(departamento.name, existing[0].id);
           }
@@ -258,15 +258,15 @@ async function seedDatabase() {
       const departamentoId = departamentosMap.get(cargo.departamento);
       if (departamentoId) {
         const result = await sql`
-          INSERT INTO cargos (name, departamento_id)
+          INSERT INTO cargos (nombre, departamento_id)
           VALUES (${cargo.name}, ${departamentoId})
           ON CONFLICT DO NOTHING
-          RETURNING id, name
+          RETURNING id, nombre
         `;
         if (result.length > 0) {
           cargosMap.set(cargo.name, result[0].id);
         } else {
-          const existing = await sql`SELECT id FROM cargos WHERE name = ${cargo.name}`;
+          const existing = await sql`SELECT id FROM cargos WHERE nombre = ${cargo.name}`;
           if (existing.length > 0) {
             cargosMap.set(cargo.name, existing[0].id);
           }
@@ -306,20 +306,21 @@ async function seedDatabase() {
       const startDate = new Date();
       startDate.setMonth(startDate.getMonth() - Math.floor(Math.random() * 24)); // Entre 0 y 24 meses atrás
 
+      const [firstName, lastName] = empleado.fullName.split(' ');
       const employeeResult = await sql`
-        INSERT INTO employees (user_id, full_name, email, phone, birth_date, cargo_id, supervisor_id, start_date, status)
+        INSERT INTO employees (user_id, first_name, last_name, email, phone, birth_date, cargo_id, supervisor_id, hire_date, is_active)
         VALUES (
           ${userId},
-          ${empleado.fullName},
+          ${firstName || empleado.fullName},
+          ${lastName || ''},
           ${empleado.email},
           ${empleado.phone},
           ${new Date(1980 + Math.floor(Math.random() * 25), Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1)},
           ${cargoId},
           ${supervisorId},
           ${startDate.toISOString().split('T')[0]},
-          ${empleado.status}
+          ${empleado.status === 'activo'}
         )
-        ON CONFLICT (email) DO NOTHING
         RETURNING id
       `;
 
@@ -331,12 +332,14 @@ async function seedDatabase() {
       // Crear contratos para empleados activos
       if (employeeResult.length > 0 && empleado.status === 'activo') {
         await sql`
-          INSERT INTO contracts (employee_id, type, start_date, is_active)
+          INSERT INTO contracts (employee_id, tipo_contrato, fecha_inicio, salario, status, creado_por)
           VALUES (
             ${employeeResult[0].id},
             'indefinido',
             ${startDate.toISOString().split('T')[0]},
-            true
+            25000,
+            'activo',
+            ${adminId}
           )
           ON CONFLICT DO NOTHING
         `;
@@ -382,7 +385,7 @@ async function seedDatabase() {
             )
             VALUES (
               ${employeeResult[0].id},
-              'renuncia_voluntaria',
+              'renuncia',
               ${fechaSolicitud.toISOString().split('T')[0]},
               ${userResult[0].id},
               'Solicitud de renuncia voluntaria para buscar nuevas oportunidades profesionales',

@@ -249,28 +249,28 @@ export class PostgresStorage implements IStorage {
       SELECT 
         e.*,
         u.cedula, u.role, u.is_active as user_is_active,
-        c.name as cargo_name,
-        d.name as departamento_name,
-        g.name as gerencia_name,
+        c.nombre as cargo_name,
+        d.nombre as departamento_name,
+        g.nombre as gerencia_name,
         g.id as gerencia_id,
         d.id as departamento_id,
         c.id as cargo_id,
-        s.full_name as supervisor_name,
-        ct.type as contract_type, ct.start_date as contract_start_date, ct.end_date as contract_end_date
+        CONCAT(s.first_name, ' ', s.last_name) as supervisor_name,
+        ct.tipo_contrato as contract_type, ct.fecha_inicio as contract_start_date, ct.fecha_fin as contract_end_date
       FROM employees e
       JOIN users u ON e.user_id = u.id
       JOIN cargos c ON e.cargo_id = c.id
       JOIN departamentos d ON c.departamento_id = d.id
       JOIN gerencias g ON d.gerencia_id = g.id
       LEFT JOIN employees s ON e.supervisor_id = s.id
-      LEFT JOIN contracts ct ON e.id = ct.employee_id AND ct.is_active = true
-      ORDER BY e.full_name
+      LEFT JOIN contracts ct ON e.id = ct.employee_id AND ct.status = 'activo'
+      ORDER BY CONCAT(e.first_name, ' ', e.last_name)
     `;
 
     return result.map((row: any) => ({
       id: row.id,
       userId: row.user_id,
-      fullName: row.full_name,
+      fullName: (row.first_name || '') + ' ' + (row.last_name || ''),
       email: row.email,
       phone: row.phone,
       birthDate: row.birth_date,
@@ -310,7 +310,7 @@ export class PostgresStorage implements IStorage {
       supervisor: row.supervisor_id
         ? {
             id: row.supervisor_id,
-            fullName: row.supervisor_name,
+            fullName: row.supervisor_name || '',
             userId: "",
             email: "",
             phone: null,
@@ -502,9 +502,9 @@ export class PostgresStorage implements IStorage {
 
   async createContract(contract: InsertContract): Promise<Contract> {
     const result = await this.sql`
-      INSERT INTO contracts (employee_id, type, start_date, end_date, is_active)
-      VALUES (${contract.employeeId}, ${contract.type}, ${contract.startDate}, 
-              ${contract.endDate}, ${contract.isActive ?? true})
+      INSERT INTO contracts (employee_id, tipo_contrato, fecha_inicio, fecha_fin, status, salario, creado_por)
+      VALUES (${contract.employeeId}, ${contract.type || 'indefinido'}, ${contract.startDate}, 
+              ${contract.endDate}, 'activo', ${contract.salary || 25000}, ${contract.createdBy})
       RETURNING *
     `;
     return result[0] as Contract;
@@ -518,20 +518,20 @@ export class PostgresStorage implements IStorage {
     const values = [];
 
     if (contract.type !== undefined) {
-      setClauses.push(`type = $${setClauses.length + 1}`);
+      setClauses.push(`tipo_contrato = $${setClauses.length + 1}`);
       values.push(contract.type);
     }
     if (contract.startDate !== undefined) {
-      setClauses.push(`start_date = $${setClauses.length + 1}`);
+      setClauses.push(`fecha_inicio = $${setClauses.length + 1}`);
       values.push(contract.startDate);
     }
     if (contract.endDate !== undefined) {
-      setClauses.push(`end_date = $${setClauses.length + 1}`);
+      setClauses.push(`fecha_fin = $${setClauses.length + 1}`);
       values.push(contract.endDate);
     }
     if (contract.isActive !== undefined) {
-      setClauses.push(`is_active = $${setClauses.length + 1}`);
-      values.push(contract.isActive);
+      setClauses.push(`status = $${setClauses.length + 1}`);
+      values.push(contract.isActive ? 'activo' : 'inactivo');
     }
 
     if (setClauses.length === 0) return this.getContract(id);
@@ -555,10 +555,10 @@ export class PostgresStorage implements IStorage {
   async getExpiringContracts(): Promise<Contract[]> {
     const result = await this.sql`
       SELECT * FROM contracts 
-      WHERE end_date IS NOT NULL 
-      AND end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'
-      AND is_active = true
-      ORDER BY end_date
+      WHERE fecha_fin IS NOT NULL 
+      AND fecha_fin BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days'
+      AND status = 'activo'
+      ORDER BY fecha_fin
     `;
     return result as Contract[];
   }
@@ -714,7 +714,7 @@ export class PostgresStorage implements IStorage {
         this
           .sql`SELECT COUNT(*) as total, status FROM employees GROUP BY status`,
         this
-          .sql`SELECT COUNT(*) as expiring FROM contracts WHERE end_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days' AND is_active = true`,
+          .sql`SELECT COUNT(*) as expiring FROM contracts WHERE fecha_fin BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '30 days' AND status = 'activo'`,
         this.sql`SELECT COUNT(*) as total FROM candidates`,
         this
           .sql`SELECT COUNT(*) as active FROM probation_periods WHERE status = 'activo'`,

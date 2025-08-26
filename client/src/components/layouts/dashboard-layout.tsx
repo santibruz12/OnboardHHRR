@@ -183,20 +183,18 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center space-x-3">
             <Avatar className="h-8 w-8">
               <AvatarFallback className="bg-primary text-primary-foreground">
-                {employee?.fullName.split(' ').map((n: string) => n[0]).join('') || user?.cedula.slice(-2)}
+                {(employee?.nombres && employee?.apellidos) ? (employee.nombres + ' ' + employee.apellidos).split(' ').map((n: string) => n[0]).join('') : user?.cedula.slice(-2)}
               </AvatarFallback>
             </Avatar>
             <div className="text-left hidden sm:block">
               <p className="text-sm font-medium text-foreground">
-                {employee?.fullName || user?.cedula}
+                {(employee?.nombres && employee?.apellidos) ? employee.nombres + ' ' + employee.apellidos : user?.cedula}
               </p>
               <p className="text-xs text-muted-foreground">
-                {user?.role === "admin" && "Administrador"}
-                {user?.role === "gerente_rrhh" && "Gerente RRHH"}
-                {user?.role === "admin_rrhh" && "Admin RRHH"}
-                {user?.role === "supervisor" && "Supervisor"}
-                {user?.role === "empleado_captacion" && "Empleado Captación"}
-                {user?.role === "empleado" && "Empleado"}
+                {user?.rol === "admin" && "Administrador"}
+                {user?.rol === "rrhh" && "Recursos Humanos"}
+                {user?.rol === "supervisor" && "Supervisor"}
+                {user?.rol === "empleado" && "Empleado"}
               </p>
             </div>
             <Button variant="ghost" size="sm" onClick={handleLogout}>

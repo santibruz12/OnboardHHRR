@@ -12,13 +12,13 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import { insertProbationPeriodSchema } from "@shared/schema";
+import { insertPeriodoPruebaSchema } from "@shared/schema";
 import { z } from "zod";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import type { ProbationPeriodWithRelations, EmployeeWithRelations } from "@/types";
+import type { PeriodoPruebaConRelaciones, EmpleadoConRelaciones } from "@/types";
 
-const probationFormSchema = insertProbationPeriodSchema.extend({
+const probationFormSchema = insertPeriodoPruebaSchema.extend({
   startDate: z.string().min(1, "Fecha de inicio requerida"),
   endDate: z.string().min(1, "Fecha de fin requerida"),
   employeeId: z.string().min(1, "Empleado requerido"),
@@ -28,7 +28,7 @@ const probationFormSchema = insertProbationPeriodSchema.extend({
 type ProbationFormData = z.infer<typeof probationFormSchema>;
 
 interface ProbationFormProps {
-  probationPeriod?: ProbationPeriodWithRelations | null;
+  probationPeriod?: PeriodoPruebaConRelaciones | null;
   onSuccess?: () => void;
 }
 
@@ -37,7 +37,7 @@ export function ProbationForm({ probationPeriod, onSuccess }: ProbationFormProps
   const queryClient = useQueryClient();
 
   // Get employees for selection
-  const { data: employees = [] } = useQuery<EmployeeWithRelations[]>({
+  const { data: employees = [] } = useQuery<EmpleadoConRelaciones[]>({
     queryKey: ["/api/employees"],
   });
 

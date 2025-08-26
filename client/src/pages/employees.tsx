@@ -15,12 +15,12 @@ import { EmployeeForm } from "@/components/forms/employee-form";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatDate, calculateSeniority } from "@/lib/date-utils";
-import type { EmployeeWithRelations } from "@shared/schema";
+import type { EmpleadoConRelaciones } from "@shared/schema";
 
 export default function Employees() {
   const [isEmployeeFormOpen, setIsEmployeeFormOpen] = useState(false);
-  const [editingEmployee, setEditingEmployee] = useState<EmployeeWithRelations | null>(null);
-  const [viewingEmployee, setViewingEmployee] = useState<EmployeeWithRelations | null>(null);
+  const [editingEmployee, setEditingEmployee] = useState<EmpleadoConRelaciones | null>(null);
+  const [viewingEmployee, setViewingEmployee] = useState<EmpleadoConRelaciones | null>(null);
   const [deleteEmployeeId, setDeleteEmployeeId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("todos");
@@ -35,7 +35,7 @@ export default function Employees() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: employees = [], isLoading } = useQuery<EmployeeWithRelations[]>({
+  const { data: employees = [], isLoading } = useQuery<EmpleadoConRelaciones[]>({
     queryKey: ["/api/employees"]
   });
 
@@ -48,7 +48,7 @@ export default function Employees() {
 
   // Obtener años únicos de las fechas de ingreso
   const availableYears = useMemo(() => {
-    const years = employees.map(emp => new Date(emp.startDate).getFullYear());
+    const years = employees.map(emp => new Date(emp.fechaIngreso).getFullYear());
     return [...new Set(years)].sort((a, b) => b - a);
   }, [employees]);
 
@@ -73,18 +73,19 @@ export default function Employees() {
 
   const sortedAndFilteredEmployees = useMemo(() => {
     let filtered = employees.filter(employee => {
-      const searchMatch = employee.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        employee.user.cedula.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                employee.cargo?.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const nombreCompleto = (employee.nombres && employee.apellidos) ? `${employee.nombres} ${employee.apellidos}` : '';
+      const searchMatch = nombreCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        employee.usuario.cedula.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                employee.cargo?.nombre.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const statusMatch = statusFilter === "todos" || employee.status === statusFilter;
+      const statusMatch = statusFilter === "todos" || (employee.estaActivo ? "activo" : "inactivo") === statusFilter;
       
       // Seleccionar fecha según el tipo de filtro
       const referenceDate = dateTypeFilter === "ingreso" 
-        ? new Date(employee.startDate)
-        : employee.endDate 
-          ? new Date(employee.endDate)
-          : new Date(employee.startDate); // Si no hay fecha de fin, usar fecha de ingreso
+        ? new Date(employee.fechaIngreso)
+        : employee.fechaFin 
+          ? new Date(employee.fechaFin)
+          : new Date(employee.fechaIngreso); // Si no hay fecha de fin, usar fecha de ingreso
       
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear();
@@ -115,20 +116,20 @@ export default function Employees() {
       
       switch (sortBy) {
         case 'fullName':
-          aValue = a.fullName.toLowerCase();
-          bValue = b.fullName.toLowerCase();
+          aValue = ((a.nombres && a.apellidos) ? `${a.nombres} ${a.apellidos}` : '').toLowerCase();
+          bValue = ((b.nombres && b.apellidos) ? `${b.nombres} ${b.apellidos}` : '').toLowerCase();
           break;
         case 'cargo':
-          aValue = a.cargo?.name?.toLowerCase() || '';
-          bValue = b.cargo?.name?.toLowerCase() || '';
+          aValue = a.cargo?.nombre?.toLowerCase() || '';
+          bValue = b.cargo?.nombre?.toLowerCase() || '';
           break;
         case 'startDate':
-          aValue = new Date(a.startDate).getTime();
-          bValue = new Date(b.startDate).getTime();
+          aValue = new Date(a.fechaIngreso).getTime();
+          bValue = new Date(b.fechaIngreso).getTime();
           break;
         default:
-          aValue = a.fullName.toLowerCase();
-          bValue = b.fullName.toLowerCase();
+          aValue = ((a.nombres && a.apellidos) ? `${a.nombres} ${a.apellidos}` : '').toLowerCase();
+          bValue = ((b.nombres && b.apellidos) ? `${b.nombres} ${b.apellidos}` : '').toLowerCase();
       }
       
       if (sortOrder === 'asc') {
@@ -149,24 +150,19 @@ export default function Employees() {
     setSortConfig({ key, direction });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "activo":
-        return <Badge variant="default" className="bg-green-100 text-green-800">Activo</Badge>;
-      case "inactivo":
-        return <Badge variant="secondary">Inactivo</Badge>;
-      case "periodo_prueba":
-        return <Badge variant="outline" className="border-amber-500 text-amber-700">Período Prueba</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+  const getStatusBadge = (estaActivo: boolean) => {
+    if (estaActivo) {
+      return <Badge variant="default" className="bg-green-100 text-green-800">Activo</Badge>;
+    } else {
+      return <Badge variant="secondary">Inactivo</Badge>;
     }
   };
 
-  const handleEditEmployee = (employee: EmployeeWithRelations) => {
+  const handleEditEmployee = (employee: EmpleadoConRelaciones) => {
     setEditingEmployee(employee);
   };
 
-  const handleViewEmployee = (employee: EmployeeWithRelations) => {
+  const handleViewEmployee = (employee: EmpleadoConRelaciones) => {
     setViewingEmployee(employee);
   };
 
@@ -194,10 +190,8 @@ export default function Employees() {
   const getRoleBadge = (role: string) => {
     const roleLabels = {
       admin: "Administrador",
-      gerente_rrhh: "Gerente RRHH",
-      admin_rrhh: "Admin RRHH",
+      rrhh: "Recursos Humanos",
       supervisor: "Supervisor",
-      empleado_captacion: "Captación",
       empleado: "Empleado"
     };
 
@@ -383,7 +377,7 @@ export default function Employees() {
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-foreground">
-                {sortedAndFilteredEmployees.filter(e => e.status === "activo").length}
+                {sortedAndFilteredEmployees.filter(e => e.estaActivo).length}
               </p>
               <p className="text-sm text-muted-foreground">Activos</p>
             </CardContent>
@@ -391,9 +385,9 @@ export default function Employees() {
           <Card>
             <CardContent className="p-4 text-center">
               <p className="text-2xl font-bold text-foreground">
-                {sortedAndFilteredEmployees.filter(e => e.status === "periodo_prueba").length}
+                {sortedAndFilteredEmployees.filter(e => !e.estaActivo).length}
               </p>
-              <p className="text-sm text-muted-foreground">En Período Prueba</p>
+              <p className="text-sm text-muted-foreground">Inactivos</p>
             </CardContent>
           </Card>
         </div>
@@ -407,31 +401,31 @@ export default function Employees() {
                   <div className="flex items-center space-x-4">
                     <Avatar className="h-12 w-12">
                       <AvatarFallback className="bg-primary text-primary-foreground">
-                        {employee.fullName.split(' ').map((n: string) => n[0]).join('')}
+                        {(employee.nombres && employee.apellidos) ? (employee.nombres + ' ' + employee.apellidos).split(' ').map((n: string) => n[0]).join('') : 'XX'}
                       </AvatarFallback>
                     </Avatar>
                     
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground">{employee.fullName}</h3>
-                        {getStatusBadge(employee.status)}
-                        {getRoleBadge(employee.user.role)}
+                        <h3 className="font-semibold text-foreground">{(employee.nombres && employee.apellidos) ? employee.nombres + ' ' + employee.apellidos : 'Sin nombre'}</h3>
+                        {getStatusBadge(employee.estaActivo)}
+                        {getRoleBadge(employee.usuario.rol)}
                       </div>
                       
                       <p className="text-sm text-muted-foreground mb-1">
-                        {employee.cargo.name} • {employee.cargo.departamento.name} • Ingreso: {formatDate(employee.startDate)}
+                        {employee.cargo.nombre} • {employee.cargo.departamento.nombre} • Ingreso: {formatDate(employee.fechaIngreso)}
                       </p>
                       
                       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="font-mono">{employee.user.cedula}</span>
+                        <span className="font-mono">{employee.usuario.cedula}</span>
                         <div className="flex items-center gap-1">
                           <Mail className="h-3 w-3" />
                           {employee.email}
                         </div>
-                        {employee.phone && (
+                        {employee.telefono && (
                           <div className="flex items-center gap-1">
                             <Phone className="h-3 w-3" />
-                            {employee.phone}
+                            {employee.telefono}
                           </div>
                         )}
                       </div>
@@ -514,12 +508,12 @@ export default function Employees() {
               <div className="flex items-center space-x-4">
                 <Avatar className="h-16 w-16">
                   <AvatarFallback className="bg-primary text-primary-foreground text-lg">
-                    {viewingEmployee.fullName.split(' ').map(n => n[0]).join('')}
+                    {(viewingEmployee.nombres && viewingEmployee.apellidos) ? (viewingEmployee.nombres + ' ' + viewingEmployee.apellidos).split(' ').map(n => n[0]).join('') : 'XX'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="text-xl font-semibold">{viewingEmployee.fullName}</h3>
-                  <p className="text-muted-foreground">{viewingEmployee.user.cedula}</p>
+                  <h3 className="text-xl font-semibold">{(viewingEmployee.nombres && viewingEmployee.apellidos) ? viewingEmployee.nombres + ' ' + viewingEmployee.apellidos : 'Sin nombre'}</h3>
+                  <p className="text-muted-foreground">{viewingEmployee.usuario.cedula}</p>
                 </div>
               </div>
               
@@ -530,35 +524,35 @@ export default function Employees() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Teléfono</label>
-                  <p className="text-sm">{viewingEmployee.phone || "No especificado"}</p>
+                  <p className="text-sm">{viewingEmployee.telefono || "No especificado"}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Cargo</label>
-                  <p className="text-sm">{viewingEmployee.cargo.name}</p>
+                  <p className="text-sm">{viewingEmployee.cargo.nombre}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Departamento</label>
-                  <p className="text-sm">{viewingEmployee.cargo.departamento.name}</p>
+                  <p className="text-sm">{viewingEmployee.cargo.departamento.nombre}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Gerencia</label>
-                  <p className="text-sm">{viewingEmployee.cargo.departamento.gerencia.name}</p>
+                  <p className="text-sm">{viewingEmployee.cargo.departamento.gerencia.nombre}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Estado</label>
-                  <div>{getStatusBadge(viewingEmployee.status)}</div>
+                  <div>{getStatusBadge(viewingEmployee.estaActivo)}</div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Rol</label>
-                  <div>{getRoleBadge(viewingEmployee.user.role)}</div>
+                  <div>{getRoleBadge(viewingEmployee.usuario.rol)}</div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Fecha de Ingreso</label>
-                  <p className="text-sm">{formatDate(viewingEmployee.startDate)}</p>
+                  <p className="text-sm">{formatDate(viewingEmployee.fechaIngreso)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Antigüedad</label>
-                  <p className="text-sm">{calculateSeniority(viewingEmployee.startDate)}</p>
+                  <p className="text-sm">{calculateSeniority(viewingEmployee.fechaIngreso)}</p>
                 </div>
               </div>
 

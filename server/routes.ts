@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { loginSchema, insertEmployeeSchema, insertUserSchema, insertContractSchema, insertCandidateSchema, insertProbationPeriodSchema, insertEgresoSchema, insertJobOfferSchema, insertJobApplicationSchema } from "@shared/schema";
+import { loginSchema, insertEmpleadoSchema, insertUsuarioSchema, insertContratoSchema, insertCandidatoSchema, insertPeriodoPruebaSchema, insertEgresoSchema, insertOfertaTrabajoSchema, insertPostulacionSchema } from "@shared/schema";
 import { z } from "zod";
 import session from "express-session";
 import MemoryStore from "memorystore";
@@ -42,19 +42,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const result = await storage.login(validation.data);
-      if (!result) {
+      const resultado = await storage.login(validation.data);
+      if (!resultado) {
         return res.status(401).json({ error: "Credenciales inválidas" });
       }
 
       // Store user session
-      (req.session as any).user = result.user;
-      (req.session as any).employee = result.employee;
+      (req.session as any).user = resultado.usuario;
+      (req.session as any).employee = resultado.empleado;
 
       res.json({ 
         success: true, 
-        user: result.user,
-        employee: result.employee
+        user: resultado.usuario,
+        employee: resultado.empleado
       });
     } catch (error) {
       console.error("[LOGIN_ERROR]", error);
@@ -93,7 +93,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard routes
   app.get("/api/dashboard/stats", requireAuth, async (req, res) => {
     try {
-      const stats = await storage.getDashboardStats();
+      const stats = await storage.obtenerEstadisticasTablero();
       res.json(stats);
     } catch (error) {
       console.error("[DASHBOARD_STATS_ERROR]", error);
@@ -104,7 +104,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Employee routes
   app.get("/api/employees", requireAuth, async (req, res) => {
     try {
-      const employees = await storage.getEmployees();
+      const employees = await storage.obtenerEmpleados();
       res.json(employees);
     } catch (error) {
       console.error("[GET_EMPLOYEES_ERROR]", error);
@@ -114,7 +114,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/employees/:id", requireAuth, async (req, res) => {
     try {
-      const employee = await storage.getEmployee(req.params.id);
+      const employee = await storage.obtenerEmpleado(req.params.id);
       if (!employee) {
         return res.status(404).json({ error: "Empleado no encontrado" });
       }
@@ -132,11 +132,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If creating new user as well (most common case)
       let userId = req.body.userId;
       if (!userId && req.body.cedula) {
-        const userValidation = insertUserSchema.safeParse({
+        const userValidation = insertUsuarioSchema.safeParse({
           cedula: req.body.cedula,
-          password: req.body.password || "temporal123",
-          role: req.body.role || "empleado",
-          isActive: true
+          contraseña: req.body.password || "temporal123",
+          rol: req.body.role || "empleado",
+          estaActivo: true
         });
 
         if (!userValidation.success) {
@@ -148,26 +148,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         // Check if cedula already exists
-        const existingUser = await storage.getUserByCedula(req.body.cedula);
+        const existingUser = await storage.obtenerUsuarioPorCedula(req.body.cedula);
         if (existingUser) {
           return res.status(409).json({ error: "La cédula ya está registrada" });
         }
 
-        const newUser = await storage.createUser(userValidation.data);
+        const newUser = await storage.crearUsuario(userValidation.data);
         userId = newUser.id;
       }
 
       // Now validate employee data with the userId
-      const employeeValidation = insertEmployeeSchema.safeParse({
-        userId: userId,
-        fullName: req.body.fullName,
+      const employeeValidation = insertEmpleadoSchema.safeParse({
+        usuarioId: userId,
+        nombres: req.body.firstName || req.body.fullName?.split(' ')[0] || '',
+        apellidos: req.body.lastName || req.body.fullName?.split(' ').slice(1).join(' ') || '',
         email: req.body.email,
-        phone: req.body.phone,
-        birthDate: req.body.birthDate,
+        telefono: req.body.phone,
+        fechaNacimiento: req.body.birthDate,
         cargoId: req.body.cargoId,
         supervisorId: req.body.supervisorId,
-        startDate: req.body.startDate,
-        status: req.body.status || "activo"
+        fechaIngreso: req.body.startDate,
+        salario: req.body.salario,
+        estaActivo: req.body.status !== "inactivo"
       });
 
       if (!employeeValidation.success) {
@@ -178,17 +180,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const employee = await storage.createEmployee(employeeValidation.data);
+      const employee = await storage.crearEmpleado(employeeValidation.data);
 
       // Create contract if provided - ensure same date format
       if (req.body.contractType) {
         const contractStartDate = normalizeDateString(req.body.contractStartDate || req.body.startDate);
-        await storage.createContract({
-          employeeId: employee.id,
-          type: req.body.contractType,
-          startDate: contractStartDate, // Normalized date format
-          endDate: req.body.contractEndDate ? normalizeDateString(req.body.contractEndDate) : null,
-          isActive: true
+        await storage.crearContrato({
+          empleadoId: employee.id,
+          tipoContrato: req.body.contractType,
+          fechaInicio: contractStartDate, // Normalized date format
+          fechaFin: req.body.contractEndDate ? normalizeDateString(req.body.contractEndDate) : null,
+          salario: req.body.salario || 25000,
+          clausulasEspeciales: req.body.clausulasEspeciales || null,
+          estado: "activo",
+          creadoPor: (req.session as any).user.id
         });
       }
 
@@ -199,26 +204,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const endDate = new Date(startDate);
         endDate.setDate(endDate.getDate() + 30); // 30 days probation
         
-        await storage.createProbationPeriod({
-          employeeId: employee.id,
-          type: "nuevo_ingreso",
-          startDate: employeeStartDate, // Normalized date format
-          endDate: normalizeDateString(endDate),
-          status: "activo",
-          evaluationNotes: null,
-          finalEvaluation: null,
-          evaluatedBy: null,
-          evaluationDate: null,
-          extensionReason: null,
-          extensionDate: null,
-          originalEndDate: null,
-          supervisorRecommendation: null,
-          hrNotes: null,
-          approved: null
+        await storage.crearPeriodoPrueba({
+          empleadoId: employee.id,
+          fechaInicio: employeeStartDate, // Normalized date format
+          fechaFin: normalizeDateString(endDate),
+          fechaEvaluacion: null,
+          evaluadoPor: null,
+          estado: "activo",
+          calificacionRendimiento: null,
+          recomendacionSupervisor: null,
+          notasRRHH: null,
+          aprobado: null
         });
       }
 
-      const fullEmployee = await storage.getEmployee(employee.id);
+      const fullEmployee = await storage.obtenerEmpleado(employee.id);
       res.status(201).json({ success: true, employee: fullEmployee });
     } catch (error) {
       console.error("[CREATE_EMPLOYEE_ERROR]", error);
@@ -228,7 +228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/employees/:id", requireAuth, async (req, res) => {
     try {
-      const employee = await storage.getEmployee(req.params.id);
+      const employee = await storage.obtenerEmpleado(req.params.id);
       if (!employee) {
         return res.status(404).json({ error: "Empleado no encontrado" });
       }
@@ -241,7 +241,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/employees/:id", requireAuth, async (req, res) => {
     try {
-      const validation = insertEmployeeSchema.omit({ userId: true }).partial().safeParse(req.body);
+      const validation = insertEmpleadoSchema.omit({ userId: true }).partial().safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Datos inválidos", 
@@ -249,7 +249,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const employee = await storage.updateEmployee(req.params.id, validation.data);
+      const employee = await storage.actualizarEmpleado(req.params.id, validation.data);
       if (!employee) {
         return res.status(404).json({ error: "Empleado no encontrado" });
       }
@@ -258,12 +258,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (validation.data.startDate) {
         try {
           // Buscar contratos activos del empleado
-          const contracts = await storage.getContracts();
+          const contracts = await storage.obtenerContratos();
           const employeeContracts = contracts.filter(c => c.employeeId === req.params.id && c.isActive);
           
           // Actualizar la fecha de inicio de todos los contratos activos
           for (const contract of employeeContracts) {
-            await storage.updateContract(contract.id, {
+            await storage.actualizarContrato(contract.id, {
               startDate: normalizeDateString(validation.data.startDate)
             });
           }
@@ -283,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/employees/:id", requireAuth, async (req, res) => {
     try {
       // Note: Implementing soft delete by setting employee as inactive
-      const updated = await storage.updateEmployee(req.params.id, { status: "inactivo" });
+      const updated = await storage.actualizarEmpleado(req.params.id, { status: "inactivo" });
       if (!updated) {
         return res.status(404).json({ error: "Empleado no encontrado" });
       }
@@ -297,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Organizational structure routes
   app.get("/api/gerencias", requireAuth, async (req, res) => {
     try {
-      const gerencias = await storage.getGerencias();
+      const gerencias = await storage.obtenerGerencias();
       res.json(gerencias);
     } catch (error) {
       console.error("[GET_GERENCIAS_ERROR]", error);
@@ -307,7 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/departamentos/:gerenciaId", requireAuth, async (req, res) => {
     try {
-      const departamentos = await storage.getDepartamentosByGerencia(req.params.gerenciaId);
+      const departamentos = await storage.obtenerDepartamentosPorGerencia(req.params.gerenciaId);
       res.json(departamentos);
     } catch (error) {
       console.error("[GET_DEPARTAMENTOS_ERROR]", error);
@@ -317,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/cargos/:departamentoId", requireAuth, async (req, res) => {
     try {
-      const cargos = await storage.getCargosByDepartamento(req.params.departamentoId);
+      const cargos = await storage.obtenerCargosPorDepartamento(req.params.departamentoId);
       res.json(cargos);
     } catch (error) {
       console.error("[GET_CARGOS_ERROR]", error);
@@ -328,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Contract routes
   app.get("/api/contracts", requireAuth, async (req, res) => {
     try {
-      const contracts = await storage.getContracts();
+      const contracts = await storage.obtenerContratos();
       res.json(contracts);
     } catch (error) {
       console.error("[GET_CONTRACTS_ERROR]", error);
@@ -338,7 +338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/contracts/expiring-soon", requireAuth, async (req, res) => {
     try {
-      const contracts = await storage.getExpiringContracts();
+      const contracts = await storage.obtenerContratosVenciendo();
       res.json(contracts);
     } catch (error) {
       console.error("[GET_EXPIRING_CONTRACTS_ERROR]", error);
@@ -348,7 +348,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/contracts/:id", requireAuth, async (req, res) => {
     try {
-      const contract = await storage.getContract(req.params.id);
+      const contract = await storage.obtenerContrato(req.params.id);
       if (!contract) {
         return res.status(404).json({ error: "Contrato no encontrado" });
       }
@@ -361,7 +361,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/employees/:employeeId/contracts", requireAuth, async (req, res) => {
     try {
-      const contracts = await storage.getContractsByEmployee(req.params.employeeId);
+      const contracts = await storage.obtenerContratosPorEmpleado(req.params.employeeId);
       res.json(contracts);
     } catch (error) {
       console.error("[GET_EMPLOYEE_CONTRACTS_ERROR]", error);
@@ -371,7 +371,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/contracts", requireAuth, async (req, res) => {
     try {
-      const validation = insertContractSchema.safeParse(req.body);
+      const validation = insertContratoSchema.safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Datos inválidos", 
@@ -379,7 +379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const contract = await storage.createContract(validation.data);
+      const contract = await storage.crearContrato(validation.data);
       res.status(201).json({ success: true, contract });
     } catch (error) {
       console.error("[CREATE_CONTRACT_ERROR]", error);
@@ -389,7 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/contracts/:id", requireAuth, async (req, res) => {
     try {
-      const validation = insertContractSchema.partial().safeParse(req.body);
+      const validation = insertContratoSchema.partial().safeParse(req.body);
       if (!validation.success) {
         return res.status(400).json({ 
           error: "Datos inválidos", 
@@ -397,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const contract = await storage.updateContract(req.params.id, validation.data);
+      const contract = await storage.actualizarContrato(req.params.id, validation.data);
       if (!contract) {
         return res.status(404).json({ error: "Contrato no encontrado" });
       }
@@ -405,7 +405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Sincronizar empleado si se actualiza la fecha de inicio del contrato
       if (validation.data.startDate && contract.employeeId) {
         try {
-          await storage.updateEmployee(contract.employeeId, {
+          await storage.actualizarEmpleado(contract.employeeId, {
             startDate: normalizeDateString(validation.data.startDate)
           });
         } catch (syncError) {
@@ -423,7 +423,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/contracts/:id", requireAuth, async (req, res) => {
     try {
-      const success = await storage.deleteContract(req.params.id);
+      const success = await storage.eliminarContrato(req.params.id);
       if (!success) {
         return res.status(404).json({ error: "Contrato no encontrado" });
       }
@@ -436,7 +436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/contracts/expiring-soon", requireAuth, async (req, res) => {
     try {
-      const contracts = await storage.getExpiringContracts();
+      const contracts = await storage.obtenerContratosVenciendo();
       res.json(contracts);
     } catch (error) {
       console.error("[GET_EXPIRING_CONTRACTS_ERROR]", error);
@@ -447,7 +447,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Candidate routes
   app.get("/api/candidates", requireAuth, async (req, res) => {
     try {
-      const candidates = await storage.getCandidates();
+      const candidates = await storage.obtenerCandidatos();
       res.json(candidates);
     } catch (error) {
       console.error("[GET_CANDIDATES_ERROR]", error);
@@ -457,7 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/candidates/:id", requireAuth, async (req, res) => {
     try {
-      const candidate = await storage.getCandidate(req.params.id);
+      const candidate = await storage.obtenerCandidato(req.params.id);
       if (!candidate) {
         return res.status(404).json({ error: "Candidato no encontrado" });
       }
@@ -472,7 +472,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("[CREATE_CANDIDATE_REQUEST]", JSON.stringify(req.body, null, 2));
       
-      const validation = insertCandidateSchema.safeParse({
+      const validation = insertCandidatoSchema.safeParse({
         cedula: req.body.cedula,
         fullName: req.body.fullName,
         email: req.body.email,
@@ -496,8 +496,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const candidate = await storage.createCandidate(validation.data);
-      const fullCandidate = await storage.getCandidate(candidate.id);
+      const candidate = await storage.crearCandidato(validation.data);
+      const fullCandidate = await storage.obtenerCandidato(candidate.id);
       res.status(201).json({ success: true, candidate: fullCandidate });
     } catch (error) {
       console.error("[CREATE_CANDIDATE_ERROR]", error);
@@ -507,7 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/candidates/:id", requireAuth, async (req, res) => {
     try {
-      const validation = insertCandidateSchema.partial().safeParse({
+      const validation = insertCandidatoSchema.partial().safeParse({
         cedula: req.body.cedula,
         fullName: req.body.fullName,
         email: req.body.email,
@@ -529,7 +529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const candidate = await storage.updateCandidate(req.params.id, validation.data);
+      const candidate = await storage.actualizarCandidato(req.params.id, validation.data);
       if (!candidate) {
         return res.status(404).json({ error: "Candidato no encontrado" });
       }
@@ -542,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/candidates/:id", requireAuth, async (req, res) => {
     try {
-      const deleted = await storage.deleteCandidate(req.params.id);
+      const deleted = await storage.eliminarCandidato(req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Candidato no encontrado" });
       }
@@ -556,7 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Probation Periods routes
   app.get("/api/probation-periods", requireAuth, async (req, res) => {
     try {
-      const probationPeriods = await storage.getProbationPeriods();
+      const probationPeriods = await storage.obtenerPeriodosPrueba();
       res.json(probationPeriods);
     } catch (error) {
       console.error("[GET_PROBATION_PERIODS_ERROR]", error);
@@ -566,7 +566,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/probation-periods/:id", requireAuth, async (req, res) => {
     try {
-      const probationPeriod = await storage.getProbationPeriod(req.params.id);
+      const probationPeriod = await storage.obtenerPeriodoPrueba(req.params.id);
       if (!probationPeriod) {
         return res.status(404).json({ error: "Período de prueba no encontrado" });
       }
@@ -580,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/probation-periods-expiring-soon", requireAuth, async (req, res) => {
     try {
       // Filter probation periods that are expiring soon (within 7 days)
-      const allPeriods = await storage.getProbationPeriods();
+      const allPeriods = await storage.obtenerPeriodosPrueba();
       const expiringProbationPeriods = allPeriods.filter(period => {
         const endDate = new Date(period.endDate);
         const today = new Date();
@@ -596,7 +596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/employees/:employeeId/probation-periods", requireAuth, async (req, res) => {
     try {
-      const probationPeriods = await storage.getProbationPeriodsByEmployee(req.params.employeeId);
+      const probationPeriods = await storage.obtenerPeriodosPruebaPorEmpleado(req.params.employeeId);
       res.json(probationPeriods);
     } catch (error) {
       console.error("[GET_EMPLOYEE_PROBATION_PERIODS_ERROR]", error);
@@ -633,8 +633,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const probationPeriod = await storage.createProbationPeriod(validation.data);
-      const fullProbationPeriod = await storage.getProbationPeriod(probationPeriod.id);
+      const probationPeriod = await storage.crearPeriodoPrueba(validation.data);
+      const fullProbationPeriod = await storage.obtenerPeriodoPrueba(probationPeriod.id);
       res.status(201).json({ success: true, probationPeriod: fullProbationPeriod });
     } catch (error) {
       console.error("[CREATE_PROBATION_PERIOD_ERROR]", error);
@@ -669,7 +669,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const probationPeriod = await storage.updateProbationPeriod(req.params.id, validation.data);
+      const probationPeriod = await storage.actualizarPeriodoPrueba(req.params.id, validation.data);
       if (!probationPeriod) {
         return res.status(404).json({ error: "Período de prueba no encontrado" });
       }
@@ -682,7 +682,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/probation-periods/:id", requireAuth, async (req, res) => {
     try {
-      const deleted = await storage.deleteProbationPeriod(req.params.id);
+      const deleted = await storage.eliminarPeriodoPrueba(req.params.id);
       if (!deleted) {
         return res.status(404).json({ error: "Período de prueba no encontrado" });
       }

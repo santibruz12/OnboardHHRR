@@ -12,10 +12,10 @@ import { useToast } from "@/hooks/use-toast";
 import { candidateFormSchema, type CandidateFormData } from "@/lib/validators";
 import { apiRequest } from "@/lib/queryClient";
 import { CascadingSelects } from "./cascading-selects";
-import type { CandidateWithRelations } from "@/types";
+import type { CandidatoConRelaciones } from "@/types";
 
 interface CandidateFormProps {
-  candidate?: CandidateWithRelations;
+  candidate?: CandidatoConRelaciones;
   onSuccess: () => void;
 }
 
@@ -28,17 +28,17 @@ export function CandidateForm({ candidate, onSuccess }: CandidateFormProps) {
     resolver: zodResolver(candidateFormSchema),
     defaultValues: {
       cedula: candidate?.cedula || "",
-      fullName: candidate?.fullName || "",
+      nombreCompleto: candidate?.nombreCompleto || "",
       email: candidate?.email || "",
-      phone: candidate?.phone || "",
-      birthDate: candidate?.birthDate || "",
+      telefono: candidate?.telefono || "",
+      fechaNacimiento: candidate?.fechaNacimiento || "",
       gerenciaId: candidate?.cargo?.departamento?.gerencia?.id || "",
       departamentoId: candidate?.cargo?.departamento?.id || "",
       cargoId: candidate?.cargoId || "",
       cvUrl: candidate?.cvUrl || "",
-      notes: candidate?.notes || "",
-      status: candidate?.status || "en_evaluacion",
-      evaluationNotes: candidate?.evaluationNotes || "",
+      notas: candidate?.notas || "",
+      estado: candidate?.estado || "en_evaluacion",
+      notasEvaluacion: candidate?.notasEvaluacion || "",
     },
   });
 

@@ -1,24 +1,24 @@
 export type { 
-  User, 
-  Employee, 
-  EmployeeWithRelations,
+  Usuario, 
+  Empleado, 
+  EmpleadoConRelaciones,
   Gerencia,
   Departamento, 
   Cargo,
-  Contract,
-  Candidate,
-  CandidateWithRelations,
-  ProbationPeriod,
-  ProbationPeriodWithRelations,
-  DashboardStats,
-  LoginData 
+  Contrato,
+  Candidato,
+  CandidatoConRelaciones,
+  PeriodoPrueba,
+  PeriodoPruebaConRelaciones,
+  EstadisticasTablero,
+  DatosLogin 
 } from "@shared/schema";
 
-import type { User, EmployeeWithRelations } from "@shared/schema";
+import type { Usuario, EmpleadoConRelaciones } from "@shared/schema";
 
 export interface AuthState {
-  user: User | null;
-  employee: EmployeeWithRelations | null;
+  user: Usuario | null;
+  employee: EmpleadoConRelaciones | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 }

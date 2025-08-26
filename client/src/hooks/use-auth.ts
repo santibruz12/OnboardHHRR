@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { AuthState, User, EmployeeWithRelations } from "../types";
+import type { AuthState, Usuario, EmpleadoConRelaciones } from "../types";
 import * as authApi from "../lib/auth";
 
 interface AuthStore extends AuthState {

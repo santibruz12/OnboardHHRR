@@ -12,17 +12,17 @@ import { Plus, Search, FileText, Mail, Phone, User, Edit, Trash2 } from "lucide-
 import { apiRequest } from "@/lib/queryClient";
 import { CandidateForm } from "@/components/forms/candidate-form";
 import { formatDate } from "@/lib/date-utils";
-import type { CandidateWithRelations } from "@shared/schema";
+import type { CandidatoConRelaciones } from "@shared/schema";
 
 export function CandidatesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingCandidate, setEditingCandidate] = useState<CandidateWithRelations | null>(null);
+  const [editingCandidate, setEditingCandidate] = useState<CandidatoConRelaciones | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: candidates = [], isLoading } = useQuery<CandidateWithRelations[]>({
+  const { data: candidates = [], isLoading } = useQuery<CandidatoConRelaciones[]>({
     queryKey: ["/api/candidates"],
   });
 
@@ -46,16 +46,16 @@ export function CandidatesPage() {
 
   const filteredCandidates = candidates.filter((candidate) => {
     const matchesSearch = 
-      candidate.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.nombreCompleto.toLowerCase().includes(searchTerm.toLowerCase()) ||
       candidate.cedula.toLowerCase().includes(searchTerm.toLowerCase()) ||
       candidate.email.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === "all" || candidate.status === statusFilter;
+    const matchesStatus = statusFilter === "all" || candidate.estado === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (estado: string) => {
     const statusConfig = {
       "en_evaluacion": { label: "En Evaluación", variant: "secondary" as const },
       "aprobado": { label: "Aprobado", variant: "default" as const },
@@ -63,17 +63,17 @@ export function CandidatesPage() {
       "contratado": { label: "Contratado", variant: "default" as const }
     };
     
-    const config = statusConfig[status as keyof typeof statusConfig] || { label: status, variant: "secondary" as const };
+    const config = statusConfig[estado as keyof typeof statusConfig] || { label: estado, variant: "secondary" as const };
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
-  const handleEdit = (candidate: CandidateWithRelations) => {
+  const handleEdit = (candidate: CandidatoConRelaciones) => {
     setEditingCandidate(candidate);
     setDialogOpen(true);
   };
 
-  const handleDelete = (candidate: CandidateWithRelations) => {
-    if (window.confirm(`¿Está seguro de eliminar al candidato ${candidate.fullName}?`)) {
+  const handleDelete = (candidate: CandidatoConRelaciones) => {
+    if (window.confirm(`¿Está seguro de eliminar al candidato ${candidate.nombreCompleto}?`)) {
       deleteCandidateMutation.mutate(candidate.id);
     }
   };
@@ -140,7 +140,7 @@ export function CandidatesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {candidates.filter((c: CandidateWithRelations) => c.status === "en_evaluacion").length}
+              {candidates.filter((c: CandidatoConRelaciones) => c.estado === "en_evaluacion").length}
             </div>
           </CardContent>
         </Card>
@@ -152,7 +152,7 @@ export function CandidatesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {candidates.filter((c: CandidateWithRelations) => c.status === "rechazado").length}
+              {candidates.filter((c: CandidatoConRelaciones) => c.estado === "rechazado").length}
             </div>
           </CardContent>
         </Card>
@@ -164,7 +164,7 @@ export function CandidatesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {candidates.filter((c: CandidateWithRelations) => c.status === "aprobado").length}
+              {candidates.filter((c: CandidatoConRelaciones) => c.estado === "aprobado").length}
             </div>
           </CardContent>
         </Card>
@@ -176,7 +176,7 @@ export function CandidatesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {candidates.filter((c: CandidateWithRelations) => c.status === "contratado").length}
+              {candidates.filter((c: CandidatoConRelaciones) => c.estado === "contratado").length}
             </div>
           </CardContent>
         </Card>
@@ -225,11 +225,11 @@ export function CandidatesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCandidates.map((candidate: CandidateWithRelations) => (
+              {filteredCandidates.map((candidate: CandidatoConRelaciones) => (
                 <TableRow key={candidate.id}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{candidate.fullName}</div>
+                      <div className="font-medium">{candidate.nombreCompleto}</div>
                       <div className="text-sm text-muted-foreground">{candidate.cedula}</div>
                     </div>
                   </TableCell>
@@ -241,19 +241,19 @@ export function CandidatesPage() {
                       </div>
                       <div className="flex items-center text-sm">
                         <Phone className="mr-1 h-3 w-3" />
-                        {candidate.phone}
+                        {candidate.telefono}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{candidate.cargo.name}</div>
+                      <div className="font-medium">{candidate.cargo.nombre}</div>
                       <div className="text-sm text-muted-foreground">
-                        {candidate.cargo.departamento.name}
+                        {candidate.cargo.departamento.nombre}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell>{getStatusBadge(candidate.status)}</TableCell>
+                  <TableCell>{getStatusBadge(candidate.estado)}</TableCell>
                   <TableCell>
                     {new Date(candidate.createdAt).toLocaleDateString("es-VE")}
                   </TableCell>
